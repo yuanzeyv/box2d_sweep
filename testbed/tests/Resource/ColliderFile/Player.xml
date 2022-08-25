@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- created with http://www.physicseditor.de -->
+<bodydef version="1.0">
+	<bodies>
+
+		<body name="Player">
+            <anchorpoint>0.5050,0.4950</anchorpoint>
+			<fixtures>
+
+				<fixture>
+					<density>2</density>
+					<friction>1</friction>
+					<restitution>0</restitution>
+					<filter_categoryBits>4</filter_categoryBits>
+					<filter_groupIndex>0</filter_groupIndex>
+					<filter_maskBits>65535</filter_maskBits>
+					<fixture_type>CIRCLE</fixture_type>
+
+
+                    <circle r="53.049" x="-0.158" y="0.158"/>
+
+				</fixture>
+
+			</fixtures>
+		</body>
+
+		<body name="Bullet">
+            <anchorpoint>0.3980,0.4950</anchorpoint>
+			<fixtures>
+
+				<fixture>
+					<density>2</density>
+					<friction>1</friction>
+					<restitution>0</restitution>
+					<filter_categoryBits>1</filter_categoryBits>
+					<filter_groupIndex>0</filter_groupIndex>
+					<filter_maskBits>65535</filter_maskBits>
+					<fixture_type>POLYGON</fixture_type>
+
+
+					<polygons>
+
+                        <polygon>  36.0060, -0.9850  ,  6.0060, 11.0150  ,  -25.9940, 12.0150  ,  -25.9940, -10.9850  ,  7.0060, -10.9850 </polygon>
+
+					</polygons>
+
+				</fixture>
+
+			</fixtures>
+		</body>
+
+		<body name="Monster">
+            <anchorpoint>0.5050,0.5050</anchorpoint>
+			<fixtures>
+
+				<fixture>
+					<density>2</density>
+					<friction>1</friction>
+					<restitution>0</restitution>
+					<filter_categoryBits>2</filter_categoryBits>
+					<filter_groupIndex>0</filter_groupIndex>
+					<filter_maskBits>65535</filter_maskBits>
+					<fixture_type>POLYGON</fixture_type>
+
+
+					<polygons>
+
+                        <polygon>  50.9850, -17.0150  ,  15.9850, -4.0150  ,  9.9850, -9.0150  ,  43.9850, -29.0150 </polygon>
+
+                        <polygon>  -51.0150, -11.0150  ,  -7.0150, -6.0150  ,  -10.0150, 9.9850 </polygon>
+
+                        <polygon>  31.9850, 40.9850  ,  2.9850, 7.9850  ,  15.9850, 3.9850 </polygon>
+
+                        <polygon>  9.9850, -51.0150  ,  9.9850, -9.0150  ,  -0.0150, -12.0150 </polygon>
+
+                        <polygon>  50.9850, 9.9850  ,  15.9850, 3.9850  ,  15.9850, -4.0150 </polygon>
+
+                        <polygon>  15.9850, 3.9850  ,  2.9850, 7.9850  ,  -10.0150, 9.9850  ,  -7.0150, -6.0150  ,  9.9850, -9.0150  ,  15.9850, -4.0150 </polygon>
+
+                        <polygon>  -29.0150, -45.0150  ,  -0.0150, -12.0150  ,  -7.0150, -6.0150 </polygon>
+
+                        <polygon>  -0.0150, -12.0150  ,  9.9850, -9.0150  ,  -7.0150, -6.0150 </polygon>
+
+                        <polygon>  -11.0150, 49.9850  ,  -4.0150, 10.9850  ,  2.9850, 7.9850 </polygon>
+
+                        <polygon>  2.9850, 7.9850  ,  -45.0150, 27.9850  ,  -10.0150, 9.9850 </polygon>
+
+					</polygons>
+
+				</fixture>
+
+			</fixtures>
+		</body>
+
+		<body name="MonsterGen">
+            <anchorpoint>0.0000,1.0000</anchorpoint>
+			<fixtures>
+
+				<fixture>
+					<density>2</density>
+					<friction>0</friction>
+					<restitution>0</restitution>
+					<filter_categoryBits>0</filter_categoryBits>
+					<filter_groupIndex>0</filter_groupIndex>
+					<filter_maskBits>65535</filter_maskBits>
+					<fixture_type>CIRCLE</fixture_type>
+
+
+                    <circle r="45.100" x="53.000" y="-48.000"/>
+
+				</fixture>
+
+			</fixtures>
+		</body>
+
+	</bodies>
+	<metadata>
+		<format>1</format>
+		<ptm_ratio>2000</ptm_ratio>
+	</metadata>
+</bodydef>
+
+
+

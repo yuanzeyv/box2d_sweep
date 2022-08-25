@@ -12,22 +12,26 @@ function TimerBase:InitData(actor,delay,isLoop,executeList)
     
     self.TriggerProxy = G_FACADE:retrieveProxy(ProxyTable.TriggerProxy)   
 end
-function TimerBase:Execute(timeObj)
-    self.TriggerProxy:ExecuteTrigger(self.Actor,self.ExecuteList) --执行 
-    self.TimerID = nil  
-    if self.IsLoop == 1 then 
-        self:OpenTimer()
-    end  
+
+function TimerBase:Execute(timeObj) 
+    local  Execute = function ()   
+        self.TriggerProxy:ExecuteTrigger(self.Actor,self.ExecuteList) --执行  
+        if self.IsLoop == 1 then  
+            self:OpenTimer()
+        end  
+    end
+    xpcall(Execute, __TRACKBACK__)  
 end 
 
-function TimerBase:OpenTimer() 
-    if self.m_TimeObj:active() then--定时器被弹出时,已经清空了数据,可以直接服用  
+function TimerBase:OpenTimer()  
+    if self.m_TimeObj:active() then--定时器被弹出时,已经清空了数据,可以直接服用   
+        print("当前定时器正在被打开中")
         return 
     end
     sol.TimeWheelMan.Instance():AddTime(self.m_TimeObj,self.Delay)
 end 
 function TimerBase:CloseTimer()
-    if not self.TimerID then 
+    if not self.m_TimeObj:active() then 
         print("定时器未开启")
         return 
     end 

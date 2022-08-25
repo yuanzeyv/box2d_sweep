@@ -20,7 +20,7 @@ public:
 		LuaTable = table;
 	}
 	virtual void execute() {
-		LuaTable["Execute"](this);//执行当前的lua回调
+		LuaTable["Execute"](LuaTable,this);//执行当前的lua回调
 	} 
 public:
     sol::table LuaTable;//用于存储lua方法 

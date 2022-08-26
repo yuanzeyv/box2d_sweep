@@ -67,7 +67,7 @@ function PlayerIDLE(node,paramTable)--¿ÕÏĞ×´Ì¬ÏÂ£¬»áÑ­»·µÄ¼ì²âµ±Ç°µÄËÙ¶ÈÊÇ·ñÊÇ0£
         --print("AAAAAAAAAAAAA",WorldGravity.x,WorldGravity.y,LineVelocity.y,WorldGravity.y * (1/WorldGravity.y))
         --if (WorldGravity.x == 0 and (LineVelocity.y * WorldGravity.y * (-1/WorldGravity.y))<= 0.3  or (WorldGravity.y == 0 and  WorldGravity.y * (-1/WorldGravity.y) * LineVelocity.x) <= 0.3 ) then 
         --    print("BBBBBBBBBBBBB")
-        --    G_FACADE:sendNotification(NotifyDefine.KeyInput,{actorID = Player:ID(),pushKey = ' '})  
+        --    G_FACADE:sendNotification(NotifyDefine.KeyInput,{pushKey = ' '})  
         --end  
     end 
     return EnumDefine.NodeStatus.SUCCESS

@@ -6,10 +6,7 @@ end
  
 function ActorMoveProxy:LoadFinish() 
     self.ActorFacadeProxy = self:getFacade():retrieveProxy(ProxyTable.ActorFacadeProxy)  
-end    
-function ActorMoveProxy:NotifycationRegister(table) 
-    table[NotifyDefine.ActorMove] = handler(self,self.MoveActor)
-end 
+end     
 
 --我期望的结果是，如果向移动，客户端每秒钟像我发送一次移动状态刷新。
 function ActorMoveProxy:FlushActorMoveStatus(id,dir,time) --设置角色的移动位置  

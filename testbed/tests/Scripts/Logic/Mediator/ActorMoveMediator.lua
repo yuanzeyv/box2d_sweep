@@ -18,12 +18,13 @@ function ActorOperationMediator:KeyInput_Handle(data)
     move['C'] = sol.b2Vec2.new(1,-1)    
     move[' '] = sol.b2Vec2.new(0,0)    
  
+    print(data.actorID,"当前的角色ID")
     if move[data.pushKey] then 
         move[data.pushKey].x = move[data.pushKey].x 
         move[data.pushKey].y = move[data.pushKey].y 
         self.ActorMoveProxy:FlushActorMoveStatus(data.actorID, move[data.pushKey],1)
-        self.NavmeshManagerProxy = self:getFacade():retrieveProxy(ProxyTable.NavmeshManagerProxy) 
-        print("当前的距离为",self.NavmeshManagerProxy:Recast(Actor,sol.b2Vec2.new(30,30)) )
+        --self.NavmeshManagerProxy = self:getFacade():retrieveProxy(ProxyTable.NavmeshManagerProxy) 
+        --print("当前的距离为",self.NavmeshManagerProxy:Recast(Actor,sol.b2Vec2.new(30,30)) )
     end  
     print(self.ActorBehaivorProxy.Count,"当前行为树个数")
 end

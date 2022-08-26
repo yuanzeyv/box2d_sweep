@@ -14,7 +14,8 @@ function InitWorldProxy:InitProxyTable()
     self:RegisterProxy("ActorFacadeProxy")--角色装饰器  
     self:RegisterProxy("ActorBehaivorProxy")--角色行为树代理
     self:RegisterProxy("ActorMoveProxy")--角色移动代理
-    self:RegisterProxy("NavmeshManagerProxy")--寻路代理
+    self:RegisterProxy("NavmeshManagerProxy")--寻路代理 
+    self:RegisterProxy("PlayerManagerProxy") --玩家代理
 end 
 function InitWorldProxy:RegisterProxy(path)  
     table.insert( self.ProxyPathTable,self.BasePath .. path ) 

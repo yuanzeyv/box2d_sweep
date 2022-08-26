@@ -7,7 +7,8 @@ function InitWorldMediator:ctor()
     self:InitMediatorTable()
 end 
 function InitWorldMediator:InitMediatorTable() 
-    self:RegisterMediator("ActorMoveMediator")--碰撞管理
+    self:RegisterMediator("ActorMoveMediator")--碰撞管理 
+    self:RegisterMediator("PlayerCreateMediator")--玩家创建监听 
 end 
 
 function InitWorldMediator:RegisterMediator(path)  

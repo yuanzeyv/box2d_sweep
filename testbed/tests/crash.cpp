@@ -11,6 +11,7 @@
 #include "Navmesh/Navmesh.h"
 #include "Manager/NavmeshManager.h"
 #include "Manager/TimeWheelManager.h"
+#include "Manager/PlayerManager.h"
 using namespace std;  
 class Crash : public Test
 {
@@ -58,11 +59,10 @@ public:
 		Lua.LuaState["Exit"]();
 		Test::~Test(); 
 	}
-	Crash():m_TimeWheelManager(TimeWheelManager::Instance())
+	Crash():m_TimeWheelManager(TimeWheelManager::Instance()), Player(NULL)
 	{
 		BodyManager::Instance().SetWorld(m_world);
 		InitLua(); 
-		Player = Lua.LuaState["Player"];
 	}  
 	static Test* Create()
 	{
@@ -116,34 +116,37 @@ public:
 			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 0.1f, 0.1f)); 
 		} 
 	}
-	TimeWheelManager& m_TimeWheelManager;
-#include<chrono>  
+	TimeWheelManager& m_TimeWheelManager; 
 	virtual void DebugDraw(b2World* world,float step)
-	{
-   
+	{ 
 		Lua.LuaState["Tick"](step);//tick完成之后，进行距离计算
-		NavmeshManager::Instance().Update(step);
-		auto t1 = std::chrono::high_resolution_clock::now();
-		m_TimeWheelManager.Update(step);
-		auto t2 = std::chrono::high_resolution_clock::now();
-		int64_t  a = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-		printf("消耗的时间%d\n\r", a);
+		NavmeshManager::Instance().Update(step); 
+		m_TimeWheelManager.Update(step);  
 		DistanceManager::Instance().DistanceCalc();
-		DrawShape(Player, ViewType::Hero_Static, ViewStatus::Visble);
-		DrawShape(Player, ViewType::Hero_Monster, ViewStatus::Visble);
-		DrawShape(Player, ViewType::Hero_Hero, ViewStatus::Visble);
-		DrawShape(Player, ViewType::Hero_Bullet, ViewStatus::Visble);
-		b2Vec2 pos = Player->GetPosition();//当前的点位
-		pos.y = -pos.y;//找到正确的点位
-		float distance = NavmeshManager::Instance().Recast(Player->ID(), pos, b2Vec2(30, -30));//从当前点到 终点的距离
-		b2Vec2 endPoint = (b2Vec2(30, -30) - pos);
-		endPoint *= distance; 
-		endPoint += pos;
-		m_world-> m_debugDraw->DrawSegment(Player->GetPosition(),b2Vec2( endPoint.x, -endPoint.y),b2Color(255,20,0));
+		if (Player) {
+			DrawShape(Player, ViewType::Hero_Static, ViewStatus::Visble);
+			DrawShape(Player, ViewType::Hero_Monster, ViewStatus::Visble);
+			DrawShape(Player, ViewType::Hero_Hero, ViewStatus::Visble);
+			DrawShape(Player, ViewType::Hero_Bullet, ViewStatus::Visble);
+			b2Vec2 pos = Player->GetPosition();//当前的点位
+			pos.y = -pos.y;//找到正确的点位
+			float distance = NavmeshManager::Instance().Recast(Player->ID(), pos, b2Vec2(30, -30));//从当前点到 终点的距离
+			b2Vec2 endPoint = (b2Vec2(30, -30) - pos);
+			endPoint *= distance;
+			endPoint += pos;
+			m_world->m_debugDraw->DrawSegment(Player->GetPosition(), b2Vec2(endPoint.x, -endPoint.y), b2Color(255, 20, 0));
+		}
 	}
 	virtual void Keyboard(int key)
 	{
-		Lua.LuaState["Input"]((char)key);//tick完成之后，进行距离计算 
+		if (key == 263) {
+			Player = PlayerManager::Instance().GetChooseBody();
+		} 
+		PlayerID id = 0;
+		if (Player) {
+			id = Player->ID();
+		}
+		Lua.LuaState["Input"]((char)key, id);//tick完成之后，进行距离计算 
 	} 
 };
 

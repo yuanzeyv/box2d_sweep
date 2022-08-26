@@ -7,7 +7,7 @@ struct MyPoint
 {
     double x;
     double y;
-}; 
+};
 struct MyEdge
 {
     int32_t a, b;

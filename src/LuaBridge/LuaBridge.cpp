@@ -16,6 +16,7 @@
 #include "LuaBridge/DelabellaPort.h"
 #include "LuaBridge/NavmeshManagerProxy.h"
 #include "LuaBridge/TimeWheelPort.h"
+#include "LuaBridge/PlayerManagerProxy.h"
 using namespace  std;
 LuaBridge::LuaBridge()
 {
@@ -36,6 +37,7 @@ LuaBridge::LuaBridge()
     this->RegisterSolPort(new DelabellaPort());
     this->RegisterSolPort(new NavmeshManagerProxy());
     this->RegisterSolPort(new TimeWheelPort());
+    this->RegisterSolPort(new PlayerManagerProxy());
     
     sol::state_view lua(LuaState);
     sol::table table = lua.create_table("sol");

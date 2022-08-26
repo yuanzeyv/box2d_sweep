@@ -12,7 +12,9 @@ end
 Tick = function (time)  
     local Safe_Tick = function (time) 
         local ActorBehaivorProxy = G_FACADE:retrieveProxy(ProxyTable.ActorBehaivorProxy)  
-        ActorBehaivorProxy:Step(time)   
+        local PlayerManagerProxy = G_FACADE:retrieveProxy(ProxyTable.PlayerManagerProxy)  
+        ActorBehaivorProxy:Step(time) 
+        PlayerManagerProxy:Step(time)  
         G_Step = 0
     end 
     xpcall(Safe_Tick, __TRACKBACK__,time) 
@@ -23,10 +25,10 @@ Exit = function ()
     end
     xpcall(Safe_Exit, __TRACKBACK__) 
 end 
-Input = function (key)  
-    local Safe_Input = function (key)
-        G_FACADE:sendNotification(NotifyDefine.KeyInput,{actorID = Player:ID(),pushKey = key})  
+Input = function (key,actorID)  
+    local Safe_Input = function (key,actorID)
+        G_FACADE:sendNotification(NotifyDefine.KeyInput,{actorID = actorID,pushKey = key})  
     end
-    xpcall(Safe_Input, __TRACKBACK__,key) 
+    xpcall(Safe_Input, __TRACKBACK__,key,actorID) 
 end 
 Main()

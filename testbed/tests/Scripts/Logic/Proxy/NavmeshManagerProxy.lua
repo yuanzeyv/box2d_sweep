@@ -8,11 +8,11 @@ end
 function NavmeshManagerProxy:LoadFinish()   
 end   
 --将角色加入到寻路地图
-function NavmeshManagerProxy:RegisterActor(actor)
+function NavmeshManagerProxy:RegisterActor(actor) 
     sol.NavmeshMan.Instance():RegisterActor(self.NavMeshTable["AAA"],actor:GetID())  --祖册当前的角色
 end 
 --加载一个地图
-function NavmeshManagerProxy:GenerateNavmesh(path,mapID) --对应的地图ID
+function NavmeshManagerProxy:GenerateNavmesh(path,mapID) --对应的地图ID 
     local navMeshID = sol.NavmeshMan.Instance():GenerateNavmesh(path)   
     self.NavMeshTable[mapID] = navMeshID--目前地图就一个
 end     

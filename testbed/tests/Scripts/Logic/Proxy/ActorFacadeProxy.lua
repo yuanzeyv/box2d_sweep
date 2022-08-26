@@ -26,8 +26,7 @@ function ActorFacadeProxy:CreateActor(modelID,actorID,pos,level)
     self.ActorAttributeManagerProxy:RegisterActor(ID)--将角色给到属性中去 
     self.ActorAttributeManagerProxy:UpdateSystemTable(ID,EnumDefine.AttributeSystem.LevelSystem,ActorBase:GetLevelConfig())--将角色给到属性中去   
     self.ActorBehaivorProxy:RegisterPlayer(ActorBase) 
-    ActorBase:InitCoreAttr()
-    print("AAAAAAAAAAAAAAAAAAAA")
+    ActorBase:InitCoreAttr() 
     ActorBase:OpenTimer()    
     return ActorBase  
 end

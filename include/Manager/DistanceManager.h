@@ -3,23 +3,10 @@
 #include "Manager/BodyManager.h"
 #include <unordered_map>
 #include <unordered_set>
+#include "Define.h"
 #include <vector>     
 using std::unordered_map;
 using std::unordered_set;
-enum class ViewType {
-	Null = 0,	//这是一个空单元
-	Monster_Hero = 1 ,//怪物表
-	Hero_Monster = 2 ,//英雄表 
-	Hero_Hero = 3,//英雄到英雄
-	Static_Hero = 4,//静态到英雄
-	Hero_Static = 5,//英雄到静态
-	Hero_Bullet = 6,//英雄到子弹
-	Bullet_Hero = 7,//子弹到英雄
-}; 
-enum class ViewStatus {
-	Visble = 0,
-	Invisble = 1,
-}; 
 class DistanceManager
 {
 private:

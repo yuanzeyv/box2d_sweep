@@ -10,20 +10,20 @@ using namespace std;
 bool DistanceManager::RegisterBody(BodyData* bodyData) { 
 	DistanceObjMap[bodyData->ID()] = bodyData;//用于存储记录 道具信息
 	BodyType type = bodyData->Type();
-	if (type == BodyType::MonsterBody) {//如果类型为 怪物类型单位话
-		__RegisterBody(bodyData, ViewType::Monster_Hero, BodyType::PlayerBody,ViewType::Hero_Monster); 
+	if (type == BodyType::MONSTER_BODY) {//如果类型为 怪物类型单位话
+		__RegisterBody(bodyData, ViewType::MONSTER_HERO, BodyType::PLAYER_BODY,ViewType::HERO_MONSTER); 
 	}
-	else if (type == BodyType::PlayerBody)
+	else if (type == BodyType::PLAYER_BODY)
 	{
-		__RegisterBody(bodyData, ViewType::Hero_Monster, BodyType::MonsterBody,ViewType::Monster_Hero);
-		__RegisterBody(bodyData, ViewType::Hero_Hero, BodyType::PlayerBody, ViewType::Null);
-		__RegisterBody(bodyData, ViewType::Hero_Static, BodyType::StaticBody, ViewType::Static_Hero);
-		__RegisterBody(bodyData, ViewType::Hero_Bullet, BodyType::BulletBody, ViewType::Bullet_Hero);
+		__RegisterBody(bodyData, ViewType::HERO_MONSTER, BodyType::MONSTER_BODY,ViewType::MONSTER_HERO);
+		__RegisterBody(bodyData, ViewType::HERO_HERO, BodyType::PLAYER_BODY, ViewType::VIEW_TYPE_NULL);
+		__RegisterBody(bodyData, ViewType::HERO_STATIC, BodyType::STATIC_BODY, ViewType::STATIC_HERO);
+		__RegisterBody(bodyData, ViewType::HERO_BULLET, BodyType::BULLET_BODY, ViewType::BULLET_HERO);
 	}
-	else if (type == BodyType::StaticBody)
-		__RegisterBody(bodyData, ViewType::Static_Hero, BodyType::PlayerBody, ViewType::Hero_Static);
-	else if (type == BodyType::BulletBody) 
-		__RegisterBody(bodyData, ViewType::Bullet_Hero , BodyType::PlayerBody, ViewType::Hero_Bullet); 
+	else if (type == BodyType::STATIC_BODY)
+		__RegisterBody(bodyData, ViewType::STATIC_HERO, BodyType::PLAYER_BODY, ViewType::HERO_STATIC);
+	else if (type == BodyType::BULLET_BODY) 
+		__RegisterBody(bodyData, ViewType::BULLET_HERO , BodyType::PLAYER_BODY, ViewType::HERO_BULLET); 
 	return true;
 }
 void DistanceManager::UnregisterBody(ActorID id)
@@ -33,23 +33,23 @@ void DistanceManager::UnregisterBody(ActorID id)
 
 void DistanceManager::UnregisterBody(BodyData* body)
 {
-	if (body->Type() == BodyType::MonsterBody) {
-		__UnregisterBody(body, ViewType::Monster_Hero,ViewType::Hero_Monster);
+	if (body->Type() == BodyType::MONSTER_BODY) {
+		__UnregisterBody(body, ViewType::MONSTER_HERO,ViewType::HERO_MONSTER);
 	}
-	else if (body->Type() == BodyType::PlayerBody)
+	else if (body->Type() == BodyType::PLAYER_BODY)
 	{
-		__UnregisterBody(body, ViewType::Hero_Monster, ViewType::Monster_Hero);
-		__UnregisterBody(body, ViewType::Hero_Hero, ViewType::Null);
-		__UnregisterBody(body, ViewType::Hero_Static, ViewType::Static_Hero);
-		__UnregisterBody(body, ViewType::Hero_Bullet, ViewType::Bullet_Hero);
+		__UnregisterBody(body, ViewType::HERO_MONSTER, ViewType::MONSTER_HERO);
+		__UnregisterBody(body, ViewType::HERO_HERO, ViewType::VIEW_TYPE_NULL);
+		__UnregisterBody(body, ViewType::HERO_STATIC, ViewType::STATIC_HERO);
+		__UnregisterBody(body, ViewType::HERO_BULLET, ViewType::BULLET_HERO);
 	}
-	else if (body->Type() == BodyType::StaticBody)
+	else if (body->Type() == BodyType::STATIC_BODY)
 	{
-		__UnregisterBody(body, ViewType::Static_Hero, ViewType::Hero_Static);
+		__UnregisterBody(body, ViewType::STATIC_HERO, ViewType::HERO_STATIC);
 	}
-	else if (body->Type() == BodyType::BulletBody)
+	else if (body->Type() == BodyType::BULLET_BODY)
 	{ 
-		__UnregisterBody(body, ViewType::Bullet_Hero, ViewType::Hero_Bullet);
+		__UnregisterBody(body, ViewType::BULLET_HERO, ViewType::HERO_BULLET);
 	} 
 	IgnoreCalcMap.erase(body->ID());
 	DistanceObjMap.erase(body->ID());
@@ -60,7 +60,7 @@ void DistanceManager::UnregisterBody(BodyData* body)
 b2Body* DistanceManager::MinumumDistanceBody(ActorID checkID, ViewType checkType)
 { 
 	BodyData* bodyData = DistanceObjMap[checkID];
-	auto visibleList = DistanceMap[checkType][checkID][ViewStatus::Visble];
+	auto visibleList = DistanceMap[checkType][checkID][ViewStatus::VISIBLE];
 	float distance = 9999;
 	b2Body* retBody = NULL;
 	b2Vec2 bodyPos = bodyData->GetBody()->GetPosition();
@@ -75,23 +75,23 @@ b2Body* DistanceManager::MinumumDistanceBody(ActorID checkID, ViewType checkType
 	return retBody;
 }
 void DistanceManager::RecountDistance(BodyData * body) {
-	if (body->Type() == BodyType::MonsterBody) { 
-		__RecountDistance(body, ViewType::Monster_Hero, ViewType::Hero_Monster);
-	} else if (body->Type() == BodyType::PlayerBody) {
-		__RecountDistance(body, ViewType::Hero_Monster, ViewType::Monster_Hero);
-		__RecountDistance(body, ViewType::Hero_Hero, ViewType::Null);
-		__RecountDistance(body, ViewType::Hero_Static, ViewType::Null);
-		__RecountDistance(body, ViewType::Hero_Bullet, ViewType::Bullet_Hero);
-	}else if (body->Type() == BodyType::BulletBody) {
-		__RecountDistance(body, ViewType::Bullet_Hero, ViewType::Hero_Bullet);
+	if (body->Type() == BodyType::MONSTER_BODY) { 
+		__RecountDistance(body, ViewType::MONSTER_HERO, ViewType::HERO_MONSTER);
+	} else if (body->Type() == BodyType::PLAYER_BODY) {
+		__RecountDistance(body, ViewType::HERO_MONSTER, ViewType::MONSTER_HERO);
+		__RecountDistance(body, ViewType::HERO_HERO, ViewType::VIEW_TYPE_NULL);
+		__RecountDistance(body, ViewType::HERO_STATIC, ViewType::VIEW_TYPE_NULL);
+		__RecountDistance(body, ViewType::HERO_BULLET, ViewType::BULLET_HERO);
+	}else if (body->Type() == BodyType::BULLET_BODY) {
+		__RecountDistance(body, ViewType::BULLET_HERO, ViewType::HERO_BULLET);
 	}
 }
 
 //重新计算距离
 void DistanceManager::__RecountDistance(BodyData* body, ViewType viewType, ViewType addType)
 {
-	auto& inviewMap = DistanceMap[viewType][body->ID()][ViewStatus::Invisble];//为了方便计算 获取到不可视表
-	auto& viewMap = DistanceMap[viewType][body->ID()][ViewStatus::Visble];//为了方便计算 获取到可视表
+	auto& inviewMap = DistanceMap[viewType][body->ID()][ViewStatus::INVISIBLE];//为了方便计算 获取到不可视表
+	auto& viewMap = DistanceMap[viewType][body->ID()][ViewStatus::VISIBLE];//为了方便计算 获取到可视表
 	map<ActorID, BodyData*> tempInviewMap;//临时存储，以防不好操作Map结构
 	const b2AABB& BodyAABB = body->GetViewAABB();//获取到可视范围
 	for (auto begin = viewMap.begin(); begin != viewMap.end(); ) {//开始计算看得见的表 
@@ -113,14 +113,14 @@ void DistanceManager::__RecountDistance(BodyData* body, ViewType viewType, ViewT
 		}
 	}
 	inviewMap.insert(tempInviewMap.begin(), tempInviewMap.end());//不可视临时Map添加
-	if (addType == ViewType::Null)//不执行之后的操作
+	if (addType == ViewType::VIEW_TYPE_NULL)//不执行之后的操作
 		goto con;
 	{
-		auto& visbleMainMap = DistanceMap[viewType][body->ID()][ViewStatus::Visble];//获取到被操作对象的所有数据信息
+		auto& visbleMainMap = DistanceMap[viewType][body->ID()][ViewStatus::VISIBLE];//获取到被操作对象的所有数据信息
 		auto& typeMap = DistanceMap[addType];//获取到 关联对象的Map
 		for (auto item = typeMap.begin(); item != typeMap.end(); item++) {//对相关联的表进行更新
-			ViewStatus isMainVisble = visbleMainMap.find(item->first) != visbleMainMap.end() ? ViewStatus::Visble : ViewStatus::Invisble;//判断其是否在可见列表中，得出的结果是当前所在的列表
-			ViewStatus isInverterVisble = isMainVisble == ViewStatus::Visble ? ViewStatus::Invisble : ViewStatus::Visble;//判断其是否在可见列表中，得出的结果是当前所在的列表
+			ViewStatus isMainVisble = visbleMainMap.find(item->first) != visbleMainMap.end() ? ViewStatus::VISIBLE : ViewStatus::INVISIBLE;//判断其是否在可见列表中，得出的结果是当前所在的列表
+			ViewStatus isInverterVisble = isMainVisble == ViewStatus::VISIBLE ? ViewStatus::INVISIBLE : ViewStatus::VISIBLE;//判断其是否在可见列表中，得出的结果是当前所在的列表
 			auto relevanceVisibleMap = typeMap[item->first][isMainVisble];//获取到对应关联列表列表
 			ViewStatus isRelevanceVisible = relevanceVisibleMap.find(body->ID()) != relevanceVisibleMap.end() ? isMainVisble : isInverterVisble;//查找列表是否有这个单元，如果没有，
 			if (isMainVisble != isRelevanceVisible) {
@@ -142,17 +142,17 @@ void DistanceManager::__RegisterBody(BodyData* body, ViewType viewType, BodyType
 	for (auto begin = BodyList.begin(); begin != BodyList.end();begin++){//开始遍历玩家列表
 		ActorID ID = begin->second->ID();
 		BodyData* calcBody = DistanceObjMap[ID];
-		ViewStatus viewStatus = b2TestOverlap(BodyAABB, calcBody->GetAABB()) ? ViewStatus::Visble : ViewStatus::Invisble;//玩家是否出现在怪物视野范围内
+		ViewStatus viewStatus = b2TestOverlap(BodyAABB, calcBody->GetAABB()) ? ViewStatus::VISIBLE : ViewStatus::INVISIBLE;//玩家是否出现在怪物视野范围内
 		DistanceMap[viewType][body->ID()][viewStatus][begin->first] = calcBody; //将玩家添加到对应视野范围
 	} 
-	if (addType == ViewType::Null)//是否与其他表联动
+	if (addType == ViewType::VIEW_TYPE_NULL)//是否与其他表联动
 		goto con;
 	{
-		auto& visbleMainMap = DistanceMap[viewType][body->ID()][ViewStatus::Visble];//获取到被操作对象的所有数据信息
+		auto& visbleMainMap = DistanceMap[viewType][body->ID()][ViewStatus::VISIBLE];//获取到被操作对象的所有数据信息
 		auto& typeMap = DistanceMap[addType];//获取到 关联对象的Map
 		for (auto item = typeMap.begin();item != typeMap.end();item++) {//对相关联的表进行更新
-			ViewStatus isMainVisble = visbleMainMap.find(item->first) != visbleMainMap.end() ? ViewStatus::Visble : ViewStatus::Invisble;//判断其是否在可见列表中，得出的结果是当前所在的列表
-			ViewStatus isInverterVisble = isMainVisble == ViewStatus::Visble ? ViewStatus::Invisble : ViewStatus::Visble;//判断其是否在可见列表中，得出的结果是当前所在的列表
+			ViewStatus isMainVisble = visbleMainMap.find(item->first) != visbleMainMap.end() ? ViewStatus::VISIBLE : ViewStatus::INVISIBLE;//判断其是否在可见列表中，得出的结果是当前所在的列表
+			ViewStatus isInverterVisble = isMainVisble == ViewStatus::VISIBLE ? ViewStatus::INVISIBLE : ViewStatus::VISIBLE;//判断其是否在可见列表中，得出的结果是当前所在的列表
 			auto relevanceVisibleMap = typeMap[item->first][isMainVisble];//获取到对应关联列表列表
 			ViewStatus isRelevanceVisible = relevanceVisibleMap.find(body->ID()) != relevanceVisibleMap.end() ? isMainVisble : isInverterVisble;//查找列表是否有这个单元，如果没有，
 			if (isMainVisble != isRelevanceVisible) {
@@ -168,16 +168,16 @@ con:
 void DistanceManager::__UnregisterBody(BodyData* body, ViewType viewType, ViewType addType)
 {
 	auto viewMap = DistanceMap[viewType][body->ID()];
-	auto visibleMap = viewMap[ViewStatus::Visble];
-	auto invisibleMap = viewMap[ViewStatus::Invisble];
-	if (addType != ViewType::Null)//是否与其他表联动 
+	auto visibleMap = viewMap[ViewStatus::VISIBLE];
+	auto invisibleMap = viewMap[ViewStatus::INVISIBLE];
+	if (addType != ViewType::VIEW_TYPE_NULL)//是否与其他表联动 
 	{	
 		//遍历可以看到的成员
 		for (auto begin = visibleMap.begin(); begin != visibleMap.end(); begin++) 
-			DistanceMap[addType][begin->first][ViewStatus::Visble].erase(body->ID()); 
+			DistanceMap[addType][begin->first][ViewStatus::VISIBLE].erase(body->ID()); 
 		//遍历不可以看到的成员
 		for (auto begin = visibleMap.begin(); begin != visibleMap.end(); begin++) 
-			DistanceMap[addType][begin->first][ViewStatus::Invisble].erase(body->ID()); 
+			DistanceMap[addType][begin->first][ViewStatus::INVISIBLE].erase(body->ID()); 
 	}
 	DistanceMap[viewType].erase(body->ID());  
 }
@@ -201,21 +201,21 @@ void DistanceManager::DistanceCalc() {
 
 void DistanceManager::DistanceDump(ActorID id) {
 	BodyData* bodyData = DistanceObjMap[id];
-	if (bodyData->Type() == BodyType::MonsterBody)
+	if (bodyData->Type() == BodyType::MONSTER_BODY)
 	{
-		__Dump(id, ViewType::Monster_Hero);
+		__Dump(id, ViewType::MONSTER_HERO);
 	}
-	else if (bodyData->Type() == BodyType::PlayerBody)
+	else if (bodyData->Type() == BodyType::PLAYER_BODY)
 	{
-		__Dump(id, ViewType::Hero_Hero);
-		__Dump(id, ViewType::Hero_Monster);
+		__Dump(id, ViewType::HERO_HERO);
+		__Dump(id, ViewType::HERO_MONSTER);
 	}
 }
 //打印当前可见对象
 void DistanceManager::__Dump(ActorID id , ViewType type)
 {
-	auto visbleMap = DistanceMap[type][id][ViewStatus::Visble];
-	auto invisbleMap = DistanceMap[type][id][ViewStatus::Invisble];
+	auto visbleMap = DistanceMap[type][id][ViewStatus::VISIBLE];
+	auto invisbleMap = DistanceMap[type][id][ViewStatus::INVISIBLE];
 	printf("当前%lld可见的对象 : ", id);
 	for (auto begin = visbleMap.begin(); begin != visbleMap.end(); begin++) {//开始计算看得见的表  
 		printf("%lld ", begin->first);

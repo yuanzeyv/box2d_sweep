@@ -1,15 +1,8 @@
 #pragma once 
 #include <iostream>
 #include <stdint.h>  
-#include "Box2d/box2d.h"   
-//4种物品属性
-enum class BodyType {
-	NONE = 0,
-	StaticBody = 1,
-	PlayerBody = 2,
-	MonsterBody = 3,
-	BulletBody = 4,
-};  
+#include "Manager/Define.h"
+#include "Box2d/box2d.h"    
 class BodyData
 { 
 public: 

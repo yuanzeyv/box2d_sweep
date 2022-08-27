@@ -31,7 +31,7 @@ inline b2Body* BodyManager::GetBody (ActorID id)
 inline BodyType BodyManager::GetType(ActorID id)
 {
 	if (BodyMap.count(id) == 0)
-		return BodyType::NONE;
+		return BodyType::BODY_TYPE_NULL;
 	return BodyMap[id]->Type();
 }
 inline void BodyManager::SetWorld(b2World* world)

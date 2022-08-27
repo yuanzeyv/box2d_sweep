@@ -124,10 +124,10 @@ public:
 		m_TimeWheelManager.Update(step);  
 		DistanceManager::Instance().DistanceCalc();
 		if (Player) {
-			DrawShape(Player, ViewType::Hero_Static, ViewStatus::Visble);
-			DrawShape(Player, ViewType::Hero_Monster, ViewStatus::Visble);
-			DrawShape(Player, ViewType::Hero_Hero, ViewStatus::Visble);
-			DrawShape(Player, ViewType::Hero_Bullet, ViewStatus::Visble);
+			DrawShape(Player, ViewType::HERO_STATIC, ViewStatus::VISIBLE);
+			DrawShape(Player, ViewType::HERO_MONSTER, ViewStatus::VISIBLE);
+			DrawShape(Player, ViewType::HERO_HERO, ViewStatus::VISIBLE);
+			DrawShape(Player, ViewType::HERO_BULLET, ViewStatus::VISIBLE);
 			b2Vec2 pos = Player->GetPosition();//当前的点位
 			pos.y = -pos.y;//找到正确的点位
 			float distance = NavmeshManager::Instance().Recast(Player->ID(), pos, b2Vec2(30, -30));//从当前点到 终点的距离

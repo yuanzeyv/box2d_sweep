@@ -13,6 +13,9 @@ option(BOX2D_BUILD_TESTBED "Build the Box2D testbed" ON)
 option(BOX2D_BUILD_DOCS "Build the Box2D documentation" OFF)
 option(BOX2D_USER_SETTINGS "Override Box2D settings with b2UserSettings.h" OFF)
 
+
+option(PURE_MVC "Use PueMVC" OFF)
+
 option(BUILD_SHARED_LIBS "Build Box2D as a shared library" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -45,6 +48,12 @@ endif()
 if (BOX2D_BUILD_UNIT_TESTS)
 	add_subdirectory(unit-test)
 endif()
+
+
+if (PURE_MVC)
+	add_subdirectory(PueMVC)
+endif()
+
 
 if (BOX2D_BUILD_TESTBED)
 	add_subdirectory(extern/glad)

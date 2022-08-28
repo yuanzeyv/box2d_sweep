@@ -14,8 +14,12 @@ set (TESTBED_SOURCE_FILES
 )
 
 add_executable(testbed ${TESTBED_SOURCE_FILES})
-target_include_directories(testbed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(testbed PUBLIC box2d glfw imgui sajson glad)
+target_include_directories(testbed 
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../PueMVC/include>
+PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} 
+)
+target_link_libraries(testbed PUBLIC box2d PureMVCdll glfw imgui sajson glad)
 set_target_properties(testbed PROPERTIES
 	CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES

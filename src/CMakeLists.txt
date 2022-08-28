@@ -17,61 +17,19 @@ set(MVC_SRC_PATH "Library/PureMVC")
 file(GLOB_RECURSE PURE_MVC_INCLUDE_DIR ${MVC_INCLUDE_PATH}/*.hpp ${MVC_INCLUDE_PATH}/Core/*.hpp  ${MVC_INCLUDE_PATH}/Interfaces/*.hpp ${MVC_INCLUDE_PATH}/Patterns/*/*.hpp)
 file(GLOB_RECURSE PURE_MVC_SRC_DIR ${MVC_SRC_PATH}/*.cpp ${MVC_SRC_PATH}/*.hpp  ${MVC_SRC_PATH}/Core/*.cpp ${MVC_SRC_PATH}/Patterns/*/*.cpp ) 
 
-set(BOX2D_SOURCE_FILES
-	Box2d/collision/b2_broad_phase.cpp
-	Box2d/collision/b2_chain_shape.cpp
-	Box2d/collision/b2_circle_shape.cpp
-	Box2d/collision/b2_collide_circle.cpp
-	Box2d/collision/b2_collide_edge.cpp
-	Box2d/collision/b2_collide_polygon.cpp
-	Box2d/collision/b2_collision.cpp
-	Box2d/collision/b2_distance.cpp
-	Box2d/collision/b2_dynamic_tree.cpp
-	Box2d/collision/b2_edge_shape.cpp
-	Box2d/collision/b2_polygon_shape.cpp
-	Box2d/collision/b2_time_of_impact.cpp
-	Box2d/common/b2_block_allocator.cpp
-	Box2d/common/b2_draw.cpp
-	Box2d/common/b2_math.cpp
-	Box2d/common/b2_settings.cpp
-	Box2d/common/b2_stack_allocator.cpp
-	Box2d/common/b2_timer.cpp
-	Box2d/dynamics/b2_body.cpp
-	Box2d/dynamics/b2_chain_circle_contact.cpp
-	Box2d/dynamics/b2_chain_circle_contact.h
-	Box2d/dynamics/b2_chain_polygon_contact.cpp
-	Box2d/dynamics/b2_chain_polygon_contact.h
-	Box2d/dynamics/b2_circle_contact.cpp
-	Box2d/dynamics/b2_circle_contact.h
-	Box2d/dynamics/b2_contact.cpp
-	Box2d/dynamics/b2_contact_manager.cpp
-	Box2d/dynamics/b2_contact_solver.cpp
-	Box2d/dynamics/b2_contact_solver.h
-	Box2d/dynamics/b2_distance_joint.cpp
-	Box2d/dynamics/b2_edge_circle_contact.cpp
-	Box2d/dynamics/b2_edge_circle_contact.h
-	Box2d/dynamics/b2_edge_polygon_contact.cpp
-	Box2d/dynamics/b2_edge_polygon_contact.h
-	Box2d/dynamics/b2_fixture.cpp
-	Box2d/dynamics/b2_friction_joint.cpp
-	Box2d/dynamics/b2_gear_joint.cpp
-	Box2d/dynamics/b2_island.cpp
-	Box2d/dynamics/b2_island.h
-	Box2d/dynamics/b2_joint.cpp
-	Box2d/dynamics/b2_motor_joint.cpp
-	Box2d/dynamics/b2_mouse_joint.cpp
-	Box2d/dynamics/b2_polygon_circle_contact.cpp
-	Box2d/dynamics/b2_polygon_circle_contact.h
-	Box2d/dynamics/b2_polygon_contact.cpp
-	Box2d/dynamics/b2_polygon_contact.h
-	Box2d/dynamics/b2_prismatic_joint.cpp
-	Box2d/dynamics/b2_pulley_joint.cpp
-	Box2d/dynamics/b2_revolute_joint.cpp
-	Box2d/dynamics/b2_weld_joint.cpp
-	Box2d/dynamics/b2_wheel_joint.cpp
-	Box2d/dynamics/b2_world.cpp
-	Box2d/dynamics/b2_world_callbacks.cpp  
-	
+
+set(MVC_LOGIC_INCLUDE_PATH "../include/Logic")
+set(MVC_LOGIC_SRC_PATH "Logic")
+file(GLOB_RECURSE MVC_LOGIC_INCLUDE_DIR ${MVC_LOGIC_INCLUDE_PATH}/*.hpp ${MVC_LOGIC_INCLUDE_PATH}/*/*.hpp  ${MVC_LOGIC_INCLUDE_PATH}/*/*/*.hpp)
+file(GLOB_RECURSE MVC_LOGIC_SRC_DIR ${MVC_LOGIC_SRC_PATH}/*.cpp ${MVC_LOGIC_SRC_PATH}/*/*.cpp  ${MVC_LOGIC_SRC_PATH}/*/*/*.cpp) 
+
+
+set(BOX2D_INCLUDE_PATH "../include/Box2d")
+set(BOX2D_SRC_PATH "Box2d")
+file(GLOB_RECURSE BOX2D_INCLUDE_DIR ${BOX2D_INCLUDE_PATH}/*.hpp)
+file(GLOB_RECURSE BOX2D_DIR ${BOX2D_SRC_PATH}/*/*.cpp ) 
+
+set(BOX2D_SOURCE_FILES 
 	Library/xml/tinyxml2.cpp
 
 	Library/lua/lapi.c
@@ -150,51 +108,13 @@ set(BOX2D_SOURCE_FILES
 	${NAVMESH_SRC_DIR}
 	${MANAGER_SRC_DIR}
 	${PURE_MVC_SRC_DIR}
-	   
+	${MVC_LOGIC_SRC_DIR}	  
+	${BOX2D_DIR}	   
+	
 	PySourceParse/PhysicsParse.cpp
 	)
 
-set(BOX2D_HEADER_FILES
-	../include/Box2d/b2_api.h
-	../include/Box2d/b2_block_allocator.h
-	../include/Box2d/b2_body.h
-	../include/Box2d/b2_broad_phase.h
-	../include/Box2d/b2_chain_shape.h
-	../include/Box2d/b2_circle_shape.h
-	../include/Box2d/b2_collision.h
-	../include/Box2d/b2_common.h
-	../include/Box2d/b2_contact.h
-	../include/Box2d/b2_contact_manager.h
-	../include/Box2d/b2_distance.h
-	../include/Box2d/b2_distance_joint.h
-	../include/Box2d/b2_draw.h
-	../include/Box2d/b2_dynamic_tree.h
-	../include/Box2d/b2_edge_shape.h
-	../include/Box2d/b2_fixture.h
-	../include/Box2d/b2_friction_joint.h
-	../include/Box2d/b2_gear_joint.h
-	../include/Box2d/b2_growable_stack.h
-	../include/Box2d/b2_joint.h
-	../include/Box2d/b2_math.h
-	../include/Box2d/b2_motor_joint.h
-	../include/Box2d/b2_mouse_joint.h
-	../include/Box2d/b2_polygon_shape.h
-	../include/Box2d/b2_prismatic_joint.h
-	../include/Box2d/b2_pulley_joint.h
-	../include/Box2d/b2_revolute_joint.h
-	../include/Box2d/b2_rope.h
-	../include/Box2d/b2_settings.h
-	../include/Box2d/b2_shape.h
-	../include/Box2d/b2_stack_allocator.h
-	../include/Box2d/b2_time_of_impact.h
-	../include/Box2d/b2_timer.h
-	../include/Box2d/b2_time_step.h
-	../include/Box2d/b2_types.h
-	../include/Box2d/b2_weld_joint.h
-	../include/Box2d/b2_wheel_joint.h
-	../include/Box2d/b2_world.h
-	../include/Box2d/b2_world_callbacks.h 
-	 
+set(BOX2D_HEADER_FILES 
 	../include/Library/BehaviorTree/actions/always_failure_node.h
 	../include/Library/BehaviorTree/actions/always_success_node.h
 	../include/Library/BehaviorTree/actions/pop_from_queue.hpp
@@ -308,15 +228,17 @@ set(BOX2D_HEADER_FILES
 	${LUA_BRIDGE_INCLUDE_DIR}	
 	${LUA_RECAST_NAVIGATION_INCLUDE_DIR} 
 	${NAVMESH_INCLUDE_DIR}  
-	${MANAGER_INCLUDE_DIR}   
+	${MANAGER_INCLUDE_DIR}     
 	${PURE_MVC_INCLUDE_DIR}   
-
-	
+	${MVC_LOGIC_INCLUDE_DIR}   
+	${BOX2D_INCLUDE_DIR}   
+	  
 	) 
 add_library(box2d ${BOX2D_SOURCE_FILES} ${BOX2D_HEADER_FILES})
 target_include_directories(box2d
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../PueMVC/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/Library/RecastNavigation>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE

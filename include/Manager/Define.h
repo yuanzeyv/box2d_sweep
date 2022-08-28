@@ -26,3 +26,11 @@ enum BodyType {
 	MONSTER_BODY = 3,
 	BULLET_BODY = 4,
 };
+
+
+enum ColliderType {
+	BEGIN_CONTACT = 0,//开始碰撞
+	END_CONTACT = 1,//结束碰撞
+	PRE_SOLVE = 2,//碰撞产生 时
+	POST_SOLVE = 3,//碰撞处理时
+};

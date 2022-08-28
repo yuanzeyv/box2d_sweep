@@ -12,14 +12,22 @@
 #include "Manager/NavmeshManager.h"
 #include "Manager/TimeWheelManager.h"
 #include "Manager/PlayerManager.h"
+#include "Logic/MVCInit.hpp"
 using namespace std;  
 class Crash : public Test
 {
 public:
 	b2Body* Player;
 	LuaBridge Lua; 
-	void InitLua()
+	MVCInit MVC_Class;
+	Crash() :m_TimeWheelManager(TimeWheelManager::Instance()), Player(NULL),MVC_Class("SWEEP")
 	{
+		BodyManager::Instance().SetWorld(m_world);
+		InitLua();
+	}
+
+	void InitLua()
+	{  
 		Lua.LuaState.open_libraries(sol::lib::package, sol::lib::base, sol::lib::debug, sol::lib::math, sol::lib::string, sol::lib::os, sol::lib::io, sol::lib::table, sol::lib::coroutine);
 		Lua.LuaState["package"]["path"] = "./tests/Scripts/?.lua";
 		auto result = Lua.LuaState.do_file("./tests/Scripts/main.lua", sol::load_mode::any);
@@ -59,11 +67,6 @@ public:
 		Lua.LuaState["Exit"]();
 		Test::~Test(); 
 	}
-	Crash():m_TimeWheelManager(TimeWheelManager::Instance()), Player(NULL)
-	{
-		BodyManager::Instance().SetWorld(m_world);
-		InitLua(); 
-	}  
 	static Test* Create()
 	{
 		return new Crash;

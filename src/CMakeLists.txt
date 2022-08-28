@@ -5,11 +5,17 @@ file(GLOB_RECURSE LUA_RECAST_NAVIGATION_INCLUDE_DIR "../include/Library/RecastNa
 file(GLOB_RECURSE LUA_RECAST_NAVIGATION_SRC_DIR "Library/RecastNavigation/*/*.cpp")
 
 file(GLOB_RECURSE NAVMESH_INCLUDE_DIR "../include/Navmesh/*.h")
-file(GLOB_RECURSE NAVMESH_SRC_DIR "NAVMESH/*.cpp")
+file(GLOB_RECURSE NAVMESH_SRC_DIR "Navmesh/*.cpp")
 
 
 file(GLOB_RECURSE MANAGER_INCLUDE_DIR "../include/Manager/*.h")
 file(GLOB_RECURSE MANAGER_SRC_DIR "Manager/*.cpp")
+
+#MVCÄ£¿é
+set(MVC_INCLUDE_PATH "../include/Library/PureMVC")
+set(MVC_SRC_PATH "Library/PureMVC")
+file(GLOB_RECURSE PURE_MVC_INCLUDE_DIR ${MVC_INCLUDE_PATH}/*.hpp ${MVC_INCLUDE_PATH}/Core/*.hpp  ${MVC_INCLUDE_PATH}/Interfaces/*.hpp ${MVC_INCLUDE_PATH}/Patterns/*/*.hpp)
+file(GLOB_RECURSE PURE_MVC_SRC_DIR ${MVC_SRC_PATH}/*.cpp ${MVC_SRC_PATH}/*.hpp  ${MVC_SRC_PATH}/Core/*.cpp ${MVC_SRC_PATH}/Patterns/*/*.cpp ) 
 
 set(BOX2D_SOURCE_FILES
 	Box2d/collision/b2_broad_phase.cpp
@@ -143,7 +149,8 @@ set(BOX2D_SOURCE_FILES
 	${LUA_RECAST_NAVIGATION_SRC_DIR}
 	${NAVMESH_SRC_DIR}
 	${MANAGER_SRC_DIR}
-	  
+	${PURE_MVC_SRC_DIR}
+	   
 	PySourceParse/PhysicsParse.cpp
 	)
 
@@ -302,6 +309,9 @@ set(BOX2D_HEADER_FILES
 	${LUA_RECAST_NAVIGATION_INCLUDE_DIR} 
 	${NAVMESH_INCLUDE_DIR}  
 	${MANAGER_INCLUDE_DIR}   
+	${PURE_MVC_INCLUDE_DIR}   
+
+	
 	) 
 add_library(box2d ${BOX2D_SOURCE_FILES} ${BOX2D_HEADER_FILES})
 target_include_directories(box2d

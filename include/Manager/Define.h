@@ -3,7 +3,7 @@
 #define PlottingScale (0.1f)						 //比例尺, 0.1米 = 1米
 #define DistanceTrans(meter) (meter * PlottingScale) //实际距离转换为 比例尺
 
-enum class ViewType {
+enum ViewType {
 	VIEW_TYPE_NULL = 0,	//这是一个空单元
 	MONSTER_HERO = 1,//怪物表
 	HERO_MONSTER = 2,//英雄表 
@@ -13,13 +13,13 @@ enum class ViewType {
 	HERO_BULLET = 6,//英雄到子弹
 	BULLET_HERO = 7,//子弹到英雄
 };
-enum class ViewStatus {
+enum ViewStatus {
 	VISIBLE = 0,
 	INVISIBLE = 1,
 };
 
 //4种物品属性
-enum class BodyType {
+enum BodyType {
 	BODY_TYPE_NULL = 0,
 	STATIC_BODY = 1,
 	PLAYER_BODY = 2,

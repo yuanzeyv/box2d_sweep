@@ -15,13 +15,20 @@ public:
 	void SetWorld(b2World* world);//设置当前的世界对象,之后所有的刚体都是添加到这里
 	bool RegisterBody(BodyType type, b2Body* body);//注册当前的body对象
 	const std::unordered_map<ActorID, BodyData*>& GetBodyList(BodyType type);//获取到当前的刚体信息列表
-	b2Body* GetBody(ActorID id);//获取到一个刚体
+	inline b2Body* GetBody(ActorID id);//获取到一个刚体
+	inline BodyData* GetBodyData(ActorID id);
 	BodyType GetType(ActorID id);//获取到一个类型
 	b2Body* CreateBody(BodyType type, std::string name,b2Vec2 postion = b2Vec2(0,0));//创建一个刚体
 	void DeleteBody(b2Body* body);//删除一个刚体
 	void DeleteBody(ActorID ID);//删除一个刚体
 	static BodyManager& Instance();//获取到单利
 };
+inline BodyData* BodyManager::GetBodyData(ActorID id)
+{
+	if (BodyMap.count(id) == 0)
+		return NULL;
+	return BodyMap[id];
+}
 inline b2Body* BodyManager::GetBody (ActorID id)
 {
 	if (BodyMap.count(id) == 0 )

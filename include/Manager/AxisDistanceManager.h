@@ -5,35 +5,59 @@
 #include <map>
 #include <unordered_set>
 #include "Define.h"
-#include <vector>     
+#include <list>     
+#include <stack>
 //当前角色可以看到谁
 //当前谁可以看到角色
 using std::unordered_map;
 using std::map;
 using std::unordered_set;
-using std::vector;
-class AxisDistanceManager;
+using std::list;
+using std::stack;
+class AxisDistanceManager; 
 class ViewRange {
 public: 
 	BodyData*  m_Actor;//当前的角色
 	unordered_set<ActorID> m_ObserverMap;//可以看到的角色列表
 	unordered_set<ActorID> m_BeObserverMap;//被谁观察到
-	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围
-	b2Vec2 m_AxisPos;//角色记录在案的位置,用于查询角色
+
+	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围 
+	b2AABB m_BodyViewRange;//记录角色的视野范围
+
+	b2Vec2 m_BodyPos;//记录角色最后一次记录的位置
+	//只有视差范围很小时,才会进行视差检查,如果视差已经大于视口 那么将会重新计算
+	float m_ViewMinusPercent;//可积累视差,积累到一定距离时,将进行一次距离计算,且本次距离计算为局部距离计算
+
+	DirectionType m_FourPointDir[4];//标记角色四个点在什么位置 
 public:
 	inline ViewRange(BodyData* bodyData) 
 	{
 		Reset();//清理一下数据
 		m_Actor = bodyData;
 	}  
+	//1代表当前仅添加视差
+	//2代表当前计算视差
+	//3代表,视差偏移过大,直接重新计算角色视口对象
+	inline int CalcActorViewRange()
+	{
+		b2Vec2 bodyPos = m_Actor->GetBody()->GetPosition();
+		float xMinus = bodyPos.x - m_BodyPos.x;
+		float yMinus = bodyPos.x - m_BodyPos.x;
+
+		//视差任意轴移动距离小于百分之3,不做计算
+		//大于百分之3 小于等于百分之30,做视差计算
+		//大于百分之30重计算
+	}
 	inline void Reset()
 	{
 		m_Actor = NULL;
 		m_ObserverRange.Set(0.5, 0.5);
-		m_AxisPos.Set(MAX_DISTANCE, MAX_DISTANCE);
+		m_BodyPos.Set(MAX_DISTANCE, MAX_DISTANCE);
 		m_ObserverMap.clear();
 		m_BeObserverMap.clear();
+		m_ViewMinusPercent = 0;
 	}
+
 	//一组人进视野
 	bool EnterView(vector<ActorID> actorList){
 		for (auto item= m_ObserverMap.begin() ;item != m_ObserverMap.end(); item++)
@@ -64,15 +88,18 @@ public:
 	}
 };
 class AxisDistanceManager
-{
-private:
-	AxisDistanceManager() {}//创建一个距离管理对象
+{ 
 public: 
 	//当前所有的距离对象
-	map<float,unordered_set<ActorID>> m_XAxisBodyMap;//x坐标的角色记录
-	map<float,unordered_set<ActorID>> m_YAxisBodyMap;//y坐标的角色记录
+	map<float, unordered_map<ActorID, PointDir*>> m_XAxisBodyMap;//x坐标的角色记录 (记录顶点的左 右)
+	map<float, unordered_map<ActorID, PointDir*>> m_YAxisBodyMap;//y坐标的角色记录 (记录顶点的上 下) 
 
-	map<ActorID, ViewRange*> m_ViewRangeMap;//角色对应的x轴与y轴 
+	unordered_map<ActorID, ViewRange*> m_ViewRangeMap;//角色对应的范围信息
+	AxisDistanceManager()
+	{ 
+	}
+	void InitDirList(int size){   
+	}
 
 	inline bool RegisterBody(ActorID id)
 	{
@@ -91,6 +118,13 @@ public:
 		delete m_ViewRangeMap[id];
 		m_ViewRangeMap.erase(id);
 	}
+	//注册角色AABB到队列中去
+	void RegisterActorAABB(){
+
+	}
+	//删除角色AABB到队列
+	void 
+
 
 	//抢制让一个角色退出所有关联的角色视野
 	void ForceCleanElseView(ActorID actorID)
@@ -198,30 +232,5 @@ public:
 				if (compareXSet.count(*actorSet))
 					actors.insert(*actorSet);
 		}
-	}
-	void UnregisterBody(BodyData* body);
-	unordered_map<ActorID, BodyData*>& GetViewBody(ActorID id, ViewType type, ViewStatus view);
-	//获取到视野范围内 最近的一个BodyData 
-	b2Body* MinumumDistanceBody(ActorID id, ViewType checkType);
-	//帧延时
-	void DistanceCalcAdd(b2Body* body);
-	void DistanceCalcAdd(BodyData* BodyData);
-	void DistanceCalcRemove(b2Body* body);
-	void DistanceCalcRemove(BodyData* BodyData);
-	void DistanceCalcClear();
-	void DistanceCalc(); 
-
-
-	unordered_map<ViewType, unordered_map<ActorID, unordered_map<ViewStatus, unordered_map<ActorID,BodyData*>>>> DistanceMap;  
-	//打印当前可见对象
-	void __Dump(ActorID id, ViewType type);
-private:
-	//重新计算
-	inline void RecountDistance(b2Body* body);
-	inline void RecountDistance(BodyData* body);
-	//重新计算距离
-	void __RecountDistance(BodyData* body, ViewType viewType, ViewType addType);
-	//添加一个单元 将所有的 listType 下的单元加入到 viewType 下，并将BodyData单元加入到 addType下
-	void __RegisterBody(BodyData* body, ViewType viewType, BodyType listType, ViewType addType);
-	void __UnregisterBody(BodyData* body, ViewType viewType, ViewType addType); 
+	} 
 }; 

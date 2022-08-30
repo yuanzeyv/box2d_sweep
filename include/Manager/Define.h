@@ -27,3 +27,11 @@ enum class BodyType {
 	MONSTER_BODY = 3,
 	BULLET_BODY = 4,
 };
+
+//四个方向
+enum DirectionType {
+	DIR_TOP = 1,
+	DIR_DOWN = 2,
+	DIR_LEFT = 3,
+	DIR_RIGHT = 4
+};

@@ -22,122 +22,148 @@ enum ViewAction
 	NO_ATION = 0,
 	PORT_ACTION = 1,
 	ALL_ACTION =2
+}; 
+//当做一个标志位,最后8位代表着这个掩码
+enum PointPosType {
+	POS_BODY_LIMIT_MAX = 0,//点位最大
+	POS_BODY_LIMIT_MIN = 1,//点位最小 
+};
+enum PointType
+{
+	Body_Type = 0,
+	View_Type = 1,
+	MAX_POINT_TYPE = 2,
 };
 class ViewRange {
 public: 
-	BodyData*  m_Actor;//当前的角色
+	BodyData*  m_Actor;//当前的角色 
 	unordered_set<ActorID> m_ObserverMap;//可以看到的角色列表
-	unordered_set<ActorID> m_BeObserverMap;//被谁观察到
+	unordered_set<ActorID> m_BeObserverMap;//被谁观察到 
+	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 
-	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围 
-	b2AABB m_BodyViewRange;//记录角色的视野范围
+	b2Vec2 m_BodyPos;//记录角色上一次添加时的AABB   
+	b2AABB m_BodyAABB;//记录角色上一次添加时的AABB   
 
-	b2Vec2 m_BodyPos;//记录角色最后一次记录的位置
-	//只有视差范围很小时,才会进行视差检查,如果视差已经大于视口 那么将会重新计算
-	float m_ViewMinusPercent;//可积累视差,积累到一定距离时,将进行一次距离计算,且本次距离计算为局部距离计算
-
-	DirectionType m_FourPointDir[4];//标记角色四个点在什么位置 
+	float m_ViewMinusPercent;//可积累视差,积累到一定距离时,将进行一次距离计算,且本次距离计算为局部距离计算 
 public:
-	inline ViewRange(BodyData* bodyData) 
+	inline ViewRange(BodyData* bodyData);
+	//获取到当前角色的刚体AABB
+	inline const b2AABB& GetNowBodyAABB()
 	{
-		Reset();//清理一下数据
-		m_Actor = bodyData;
-	}  
+		return m_Actor->GetAABB();
+	}
+	inline const b2AABB& GetFrontBodyAABB()
+	{
+		return m_BodyAABB;
+	}
 	//重新计算视口
-	inline void RecalcViewRange()
-	{
-		b2Vec2 bodyPos = m_Actor->GetBody()->GetPosition();
-		m_BodyViewRange.lowerBound.Set(bodyPos.x - m_ObserverRange.x, bodyPos.y - m_ObserverRange.y);
-		m_BodyViewRange.upperBound.Set(bodyPos.x + m_ObserverRange.x, bodyPos.y + m_ObserverRange.y);
-	}
-	inline const b2AABB& GetViewRange()
-	{
-		return m_BodyViewRange;
-	}
+	inline void RecalcViewRange();
+	inline const b2Vec2& GetViewRange();
 	//1代表当前仅添加视差
 	//2代表当前计算视差
 	//3代表,视差偏移过大,直接重新计算角色视口对象
-	inline int JudgeActorViewAction()
-	{
-		b2Vec2 bodyPos = m_Actor->GetBody()->GetPosition();
-		float xMinus = std::abs(bodyPos.x - m_BodyPos.x);
-		float yMinus = std::abs(bodyPos.x - m_BodyPos.x);
-		float xPercent = xMinus / (m_ObserverRange.x * 2);
-		float yPercent = yMinus / (m_ObserverRange.y * 2);
-		float finalPercent = std::max(xPercent, yPercent);
-		//视差任意轴移动距离小于百分之3,不做计算
-		if (finalPercent <= 3) {
-			m_ViewMinusPercent = finalPercent;
-			return 1;
-		}
-		//大于百分之3 小于等于百分之30,做视差计算
-		else if (finalPercent <= 30)
-			return 2;
-		else //大于百分之30重计算
-			return 3;
-	}
-	inline void Reset()
-	{
-		m_Actor = NULL;
-		m_ObserverRange.Set(0.5, 0.5);
-		m_BodyPos.Set(MAX_DISTANCE, MAX_DISTANCE);
-		m_ObserverMap.clear();
-		m_BeObserverMap.clear();
-		m_ViewMinusPercent = 0;
-	}
+	inline int JudgeActorViewAction();
+	inline void Reset();
+	//一组人进视野
+	bool EnterView(vector<ActorID> actorList);
+	void LeaveView(ActorID actorID);
 
 	//一组人进视野
-	bool EnterView(vector<ActorID> actorList){
-		for (auto item= m_ObserverMap.begin() ;item != m_ObserverMap.end(); item++)
-			m_ObserverMap.insert(*item);
-	}
-	void LeaveView(ActorID actorID)
-	{
-		m_ObserverMap.erase(actorID);
-	}
-
-	//一组人进视野
-	bool EnterOtherView(ActorID actorID) { 
-		m_BeObserverMap.insert(actorID);
-	}
-	void LeaveOtherView(ActorID actorID){
-		m_BeObserverMap.erase(actorID);
-	}
-	void SetAxisPos(const b2Vec2& pos)
-	{
-		m_BodyPos.Set(pos.x, pos.y);
-	}
-	const b2Vec2& GetAxisPos()
-	{
-		return this->m_BodyPos;
-	}
-	~ViewRange()
-	{ 
-	}
+	bool EnterOtherView(ActorID actorID);
+	void LeaveOtherView(ActorID actorID);
+	void SetAxisPos(const b2Vec2& pos);
+	const b2Vec2& GetAxisPos();
+	~ViewRange();
 };
+typedef unordered_set<ActorID> ViewRangeTypeSet[2];
+typedef map<float, ViewRangeTypeSet*> ViewRangeRecordMap;
 class AxisDistanceManager
 { 
 public: 
 	//当前所有的距离对象
-	map<float, unordered_map<ActorID, DirectionType>> m_XAxisBodyMap;//x坐标的角色记录 (记录顶点的左 右)
-	map<float, unordered_map<ActorID, DirectionType>> m_YAxisBodyMap;//y坐标的角色记录 (记录顶点的上 下) 
+	ViewRangeRecordMap m_XAxisBodyMap;//x坐标的角色记录 (记录顶点的左 右)
+	ViewRangeRecordMap m_YAxisBodyMap;//x坐标的角色记录 (记录顶点的左 右)  
+	list<ViewRangeTypeSet*> m_IdleViewRnageMap;//空闲的
 
 	unordered_map<ActorID, ViewRange*> m_ViewRangeMap;//角色对应的范围信息
-	AxisDistanceManager()
-	{ 
-	}
-	void InitDirList(int size){   
-	}
+	 
+	unordered_set<ActorID> m_DelayCalcMoveMap;//角色对应的范围信息
+	AxisDistanceManager();
+	void InitIdelRangeMap(int size);//分配默认数量的空闲列表
 
 	inline bool RegisterBody(ActorID id)
 	{
-		if (m_ViewRangeMap.count(id)) {
+		if (m_ViewRangeMap.count(id))
 			return false; //已经注册过了
-		}
 		BodyData* bodyData = BodyManager::Instance().GetBodyData(id);//通过身体控制单元获取到对应的身体
-		m_ViewRangeMap[id] = new ViewRange(bodyData);
-
+		ViewRange* viewRangeObj = new ViewRange(bodyData);
+		m_ViewRangeMap[id] = viewRangeObj;//注册进入即可,程序会在下一帧的开始来移动角色
+		m_DelayCalcMoveMap.insert(id);//这个角色将再下一帧被重计算
 		return true;
+	}  
+	//计算距离分两步,先移动角色,在计算距离
+	void MoveActor()
+	{
+		for (auto item = m_DelayCalcMoveMap.begin();item != m_DelayCalcMoveMap.end();item++) {
+			//首先计算当前的操作
+		}
+
+		ActorID* actoArr = actoList.data();
+		for (int i = 0; i < actoList.size(); i++)
+		{
+			ActorID actorID = actoArr[i];
+			if (!m_ViewRangeMap.count(actorID)) {
+				printf("遇到了一个问题\n\r");
+				continue;
+			}
+			ViewRange* actoViewange = m_ViewRangeMap[actorID];
+			//获取到计算视口之前的视口
+			const b2AABB frontViewRange = actoViewange->GetViewRange();//之前的视口
+			//删除当前的位置
+			RemoveDistancePoint(actorID, frontViewRange);
+			//重新计算当前单元的视口,并且更新轴
+			actoViewange->RecalcViewRange();//重新计算视口
+			const b2AABB& viewRange = actoViewange->GetViewRange();//获取到当前的视口
+			AdditionDistancePoint(actorID, viewRange);
+		}
+	}
+	inline void RemoveDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
+	{
+		if (m_XAxisBodyMap.count(viewRange.lowerBound.x))//存在当前坐标点的话 
+			if (m_XAxisBodyMap[viewRange.lowerBound.x][addType]->count(actorID))
+				m_XAxisBodyMap[viewRange.lowerBound.x][addType]->erase(actorID);
+		if (m_XAxisBodyMap.count(viewRange.upperBound.x))//存在当前坐标点的话 
+			if (m_XAxisBodyMap[viewRange.upperBound.x][addType]->count(actorID))
+				m_XAxisBodyMap[viewRange.upperBound.x][addType]->erase(actorID); 
+		if (m_YAxisBodyMap.count(viewRange.lowerBound.y))//存在当前坐标点的话 
+			if (m_YAxisBodyMap[viewRange.lowerBound.y][addType]->count(actorID))
+				m_YAxisBodyMap[viewRange.lowerBound.y][addType]->erase(actorID);
+		if (m_YAxisBodyMap.count(viewRange.upperBound.y))//存在当前坐标点的话 
+			if (m_YAxisBodyMap[viewRange.upperBound.y][addType]->count(actorID))
+				m_YAxisBodyMap[viewRange.upperBound.y][addType]->erase(actorID);
+		//判断是否使用结束了
+		ViewRnageUserOver(viewRange.lowerBound.x, true, true);
+		ViewRnageUserOver(viewRange.upperBound.x, true, true);
+		ViewRnageUserOver(viewRange.lowerBound.y, false, true);
+		ViewRnageUserOver(viewRange.upperBound.y, false, true); 
+	}
+	inline void ViewRnageUserOver(float pos,bool isX,bool virify = true)
+	{
+		ViewRangeRecordMap& tempMap = isX?m_YAxisBodyMap: m_YAxisBodyMap; 
+		if (virify && tempMap.count(pos) == 0)
+			return;
+		ViewRangeTypeSet* rangeTypeSet = tempMap[pos];
+		bool isEmpty = true;
+		for (int i = 0;i < MAX_POINT_TYPE;i++) {
+			if (!rangeTypeSet[i]->empty()) {
+				isEmpty = false;
+				break;
+			}
+		}
+		if (!isEmpty)
+			return;
+		m_IdleViewRnageMap.push_back(rangeTypeSet);
+		tempMap.erase(pos); 
 	}
 	void UnregisterBody(ActorID id)
 	{
@@ -146,17 +172,12 @@ public:
 		ForceCleanElseView(id);
 		delete m_ViewRangeMap[id];
 		m_ViewRangeMap.erase(id);
-	}
-	//注册角色AABB到队列中去
-	void RegisterActorAABB(){
-
 	} 
-
 
 	//抢制让一个角色退出所有关联的角色视野
 	void ForceCleanElseView(ActorID actorID)
 	{
-		if (!m_ViewRangeMap.count(actorID))
+		if (!m_ViewRangeMap.count(actorID))//角色没祖册的话
 			return;
 		ViewRange* rangeObj = m_ViewRangeMap[actorID];//获取到range对象
 		ViewRange* observerViewObj = NULL;//获取到range对象
@@ -221,42 +242,7 @@ public:
 			m_YAxisBodyMap[viewRange.upperBound.y][actorID] = DirectionType::DIR_TOP;
 		}
 	}
-	inline void RemoveDistancePoint(ActorID actorID, const b2AABB& viewRange)
-	{
-		if (m_XAxisBodyMap.count(viewRange.lowerBound.x) && m_XAxisBodyMap[viewRange.lowerBound.x].count(actorID))
-			m_XAxisBodyMap[viewRange.lowerBound.x].erase(actorID);;
 
-		if (m_XAxisBodyMap.count(viewRange.lowerBound.y) && m_XAxisBodyMap[viewRange.lowerBound.y].count(actorID))
-			m_XAxisBodyMap[viewRange.lowerBound.y].erase(actorID);;
-
-		if (m_YAxisBodyMap.count(viewRange.upperBound.y) && m_YAxisBodyMap[viewRange.upperBound.y].count(actorID))
-			m_YAxisBodyMap[viewRange.upperBound.x].erase(actorID);;
-
-		if (m_YAxisBodyMap.count(viewRange.upperBound.y) && m_YAxisBodyMap[viewRange.upperBound.y].count(actorID))
-			m_YAxisBodyMap[viewRange.upperBound.y].erase(actorID);;
-	}
-	//计算距离分两步,先移动角色,在计算距离
-	void MoveActor(vector<ActorID> actoList)
-	{
-		ActorID* actoArr = actoList.data();
-		for (int i = 0; i < actoList.size(); i++)
-		{
-			ActorID actorID = actoArr[i];
-			if (!m_ViewRangeMap.count(actorID)) {
-				printf("遇到了一个问题\n\r");
-				continue;
-			}
-			ViewRange* actoViewange = m_ViewRangeMap[actorID];
-			//获取到计算视口之前的视口
-			const b2AABB frontViewRange = actoViewange->GetViewRange();//之前的视口
-			//删除当前的位置
-			RemoveDistancePoint(actorID, frontViewRange);
-			//重新计算当前单元的视口,并且更新轴
-			actoViewange->RecalcViewRange();//重新计算视口
-			const b2AABB& viewRange = actoViewange->GetViewRange();//获取到当前的视口
-			AdditionDistancePoint(actorID, viewRange);
-		}
-	} 
 	//计算距离
 	void CalcDistance(ActorID actorID)
 	{

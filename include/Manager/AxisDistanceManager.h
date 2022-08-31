@@ -87,7 +87,7 @@ public:
 
 	unordered_map<ActorID, ViewRange*> m_ViewRangeMap;//角色对应的范围信息
 	 
-	unordered_set<ActorID> m_DelayCalcMoveMap;//角色对应的范围信息
+	unordered_set<ActorID> m_DelayCalcMoveSet;//角色对应的范围信息
 	AxisDistanceManager();
 	void InitIdelRangeMap(int size);//分配默认数量的空闲列表
 
@@ -98,34 +98,32 @@ public:
 		BodyData* bodyData = BodyManager::Instance().GetBodyData(id);//通过身体控制单元获取到对应的身体
 		ViewRange* viewRangeObj = new ViewRange(bodyData);
 		m_ViewRangeMap[id] = viewRangeObj;//注册进入即可,程序会在下一帧的开始来移动角色
-		m_DelayCalcMoveMap.insert(id);//这个角色将再下一帧被重计算
+		m_DelayCalcMoveSet.insert(id);//这个角色将再下一帧被重计算
 		return true;
 	}  
 	//计算距离分两步,先移动角色,在计算距离
 	void MoveActor()
 	{
-		for (auto item = m_DelayCalcMoveMap.begin();item != m_DelayCalcMoveMap.end();item++) {
-			//首先计算当前的操作
-		}
-
-		ActorID* actoArr = actoList.data();
-		for (int i = 0; i < actoList.size(); i++)
-		{
-			ActorID actorID = actoArr[i];
+		ViewRange* actoViewange = NULL;
+		for (auto item = m_DelayCalcMoveSet.begin();item != m_DelayCalcMoveSet.end();) {
+			//首先计算当前的操作 
+			ActorID actorID = *item;
 			if (!m_ViewRangeMap.count(actorID)) {
-				printf("遇到了一个问题\n\r");
-				continue;
+				goto erase;
 			}
-			ViewRange* actoViewange = m_ViewRangeMap[actorID];
-			//获取到计算视口之前的视口
-			const b2AABB frontViewRange = actoViewange->GetViewRange();//之前的视口
-			//删除当前的位置
-			RemoveDistancePoint(actorID, frontViewRange);
-			//重新计算当前单元的视口,并且更新轴
-			actoViewange->RecalcViewRange();//重新计算视口
-			const b2AABB& viewRange = actoViewange->GetViewRange();//获取到当前的视口
-			AdditionDistancePoint(actorID, viewRange);
-		}
+			actoViewange = m_ViewRangeMap[actorID];
+			if (actoViewange->JudgeActorViewAction() == 1) {//删除不需要计算的单元
+				goto erase;
+			} 
+			//对当前角色进行位移,移动视野  移动碰撞盒
+			RemoveDistancePoint(actorID, Body_Type, actoViewange->GetNowBodyAABB());//删除原有的物理碰撞盒子
+			RemoveDistancePoint(actorID, View_Type, actoViewange->m_Actor->GetViewAABB());//删除原有的石头碰撞盒子
+			//将现有的添加上去
+			//将现有的视图添加上去
+			item = item++; 
+		erase:
+			m_DelayCalcMoveSet.erase(actorID);
+		} 
 	}
 	inline void RemoveDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
 	{
@@ -134,7 +132,7 @@ public:
 				m_XAxisBodyMap[viewRange.lowerBound.x][addType]->erase(actorID);
 		if (m_XAxisBodyMap.count(viewRange.upperBound.x))//存在当前坐标点的话 
 			if (m_XAxisBodyMap[viewRange.upperBound.x][addType]->count(actorID))
-				m_XAxisBodyMap[viewRange.upperBound.x][addType]->erase(actorID); 
+				m_XAxisBodyMap[viewRange.upperBound.x][addType]->erase(actorID);
 		if (m_YAxisBodyMap.count(viewRange.lowerBound.y))//存在当前坐标点的话 
 			if (m_YAxisBodyMap[viewRange.lowerBound.y][addType]->count(actorID))
 				m_YAxisBodyMap[viewRange.lowerBound.y][addType]->erase(actorID);
@@ -145,7 +143,29 @@ public:
 		ViewRnageUserOver(viewRange.lowerBound.x, true, true);
 		ViewRnageUserOver(viewRange.upperBound.x, true, true);
 		ViewRnageUserOver(viewRange.lowerBound.y, false, true);
-		ViewRnageUserOver(viewRange.upperBound.y, false, true); 
+		ViewRnageUserOver(viewRange.upperBound.y, false, true);
+	}
+	//在使用本函数之前应确保,当前的列表中,再无对应角色
+	inline void AllocDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
+	{
+		//判断有无,申请
+		if (m_XAxisBodyMap.count(viewRange.lowerBound.x))//存在当前坐标点的话 
+			if (m_XAxisBodyMap[viewRange.lowerBound.x][addType]->count(actorID))
+				m_XAxisBodyMap[viewRange.lowerBound.x][addType]->erase(actorID);
+		if (m_XAxisBodyMap.count(viewRange.upperBound.x))//存在当前坐标点的话 
+			if (m_XAxisBodyMap[viewRange.upperBound.x][addType]->count(actorID))
+				m_XAxisBodyMap[viewRange.upperBound.x][addType]->erase(actorID);
+		if (m_YAxisBodyMap.count(viewRange.lowerBound.y))//存在当前坐标点的话 
+			if (m_YAxisBodyMap[viewRange.lowerBound.y][addType]->count(actorID))
+				m_YAxisBodyMap[viewRange.lowerBound.y][addType]->erase(actorID);
+		if (m_YAxisBodyMap.count(viewRange.upperBound.y))//存在当前坐标点的话 
+			if (m_YAxisBodyMap[viewRange.upperBound.y][addType]->count(actorID))
+				m_YAxisBodyMap[viewRange.upperBound.y][addType]->erase(actorID);
+		//判断是否使用结束了
+		ViewRnageUserOver(viewRange.lowerBound.x, true, true);
+		ViewRnageUserOver(viewRange.upperBound.x, true, true);
+		ViewRnageUserOver(viewRange.lowerBound.y, false, true);
+		ViewRnageUserOver(viewRange.upperBound.y, false, true);
 	}
 	inline void ViewRnageUserOver(float pos,bool isX,bool virify = true)
 	{

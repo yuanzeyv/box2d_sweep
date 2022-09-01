@@ -15,7 +15,7 @@ using std::map;
 using std::unordered_set;
 using std::list;
 using std::vector;
-#define MAX_OVERFLOW_RANGE (1.0f) //按照1米等分 
+#define MAX_OVERFLOW_RANGE (0.5f) //按照1米等分 
 /*
 bit 56-64 剩余类型
 bit 48-55 区域ID
@@ -26,13 +26,6 @@ bit 0-54  角色ID
 
 #define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | (type << 48)) //生成一个设置点位类型的数组
 #define GEN_AABB_AREA_ID(actorID,id) ((actorID) | (type << 48)) //生成一个设置点位类型的数组
- 
- 
-//判断两个AABB是否互相包含的条件
-//任意一点 X Y均在范围内
-//x在范围内,y不在,但是最小 和 最大均包含当前的AABB
-//x不在范围内,向外溢出范围寻找最大的点位,找寻所有可以找到的,循环遍历所有最大点位的最小点位是否小于
-//当做一个标志位,最后8位代表着这个掩码
 enum PointPosType {
 	POS_BODY_LIMIT_MAX = 0,//点位最大
 	POS_BODY_LIMIT_MIN = 1,//点位最小 
@@ -45,33 +38,23 @@ enum PointType{
 
 typedef unordered_set<ActorID> ViewRangeTypeSet[2];
 typedef map<float, ViewRangeTypeSet*> ViewRangeRecordMap;
+  
 
-template<typename Type>
-class AxisControl {
-public;
-	 map<float, Type> m_AxisRangeMap;//默认排序由大到小
-	 //查询某一范围的所有信息
-	 void GetRangeAllData(list<Type>&outData, float axisKey,float findWdith,float leftOffset,float rightOffset)
-	 {
-
-		 //首先找到当前偏左的所有类型
-		 m_AxisRangeMap
-	 }
-};
 
 template<typename ListType>
-class AutomaticGenerator{
-public: 
-	AutomaticGenerator():m_AllocStep(100) {
+class AutomaticGenerator {
+public:
+	AutomaticGenerator() :m_AllocStep(100) {
 	}
 	~AutomaticGenerator() {
-		if (m_AllocCount > m_IdleList.size())
-			printf("当前有%s对象%lld个未被回收,将造成内存泄漏,请检查代码逻辑\n\r", typeid(ListType).name);
-		for (auto item = m_IdleList.begin();item != m_IdleList.end();item++)
+		if (m_AllocCount > m_IdleList.size()) {
+			printf("当前有%s对象%lld个未被回收,将造成内存泄漏,请检查代码逻辑\n\r", typeid(ListType).name(), m_AllocCount - m_IdleList.size());
+		}
+		for (auto item = m_IdleList.begin(); item != m_IdleList.end(); item++)
 			delete* item;//删除它 
 		m_IdleList.erase(m_IdleList.begin(), m_IdleList.end()); //全部清理
 	}
-	ListType* RequireObj(){
+	ListType* RequireObj() {
 		if (m_IdleList.size() == 0)//列表空了的话
 			GenerateIdelRangeMap(m_AllocStep);//1000个角色  
 		auto beginObj = m_IdleList.begin();
@@ -84,7 +67,7 @@ public:
 	}
 private:
 	void GenerateIdelListTypes() {
-		for (int i = 0; i < m_AllocStep;i++) {
+		for (int i = 0; i < m_AllocStep; i++) {
 			ListType* typeObj = new ListType;
 			m_IdleList.insert(typeObj);//创建这么多个空闲对象
 		}
@@ -92,10 +75,9 @@ private:
 	}
 private:
 	int m_AllocStep;//分配步长
-	int64 m_AllocCount;//分配的个数
+	int64_t m_AllocCount;//分配的个数
 	std::list<ListType*> m_IdleList;//当前空闲的个数
 };
-
 class ViewRange {
 public: 
 	BodyData*  m_Actor;//当前的角色 
@@ -105,11 +87,14 @@ public:
 	b2Vec2 m_BodyPos;//上一次的角色位置
 	b2AABB m_BodyAABB;//记录角色上一次添加时的AABB    
 	b2AABB m_ViewAABB;//记录上一次添加时的视图AABB
-
+	list<b2AABB*> SplitAABBList;//分割后的AABB 
+	list<b2AABB*> SplitViewAABBList;//分割后的AABB 
+	AutomaticGenerator<b2AABB>* m_AABBAllocObj;
 public:
-	ViewRange(BodyData* bodyData) {
+	ViewRange(BodyData* bodyData, AutomaticGenerator<b2AABB>* allocObj) {
 		Reset();//清理一下数据
 		m_Actor = bodyData;
+		m_AABBAllocObj = allocObj;
 	}
 	inline void Reset()
 	{
@@ -135,6 +120,86 @@ public:
 		m_ViewAABB.lowerBound.Set(m_BodyPos.x - m_ObserverRange.x, m_BodyPos.y - m_ObserverRange.x);
 		m_ViewAABB.upperBound.Set(m_BodyPos.x + m_ObserverRange.y, m_BodyPos.y + m_ObserverRange.y);
 	}
+	inline bool IsSplitAABB()//是否分割了刚体
+	{
+		return (m_BodyAABB.upperBound.x - m_BodyAABB.lowerBound.x) > MAX_OVERFLOW_RANGE;
+	}
+	inline bool IsSplitViewAABB()//是否分割了刚体
+	{
+		return (m_ViewAABB.upperBound.x - m_ViewAABB.lowerBound.x) > MAX_OVERFLOW_RANGE;
+	} 
+	//计算分割刚体(AABB会经常算,视图不经常算)
+	inline void CalcSplitAABB()//计算分割AABB
+	{
+		//首先获取到当前刚体的AABB的长度
+		float length = m_BodyAABB.upperBound.x - m_BodyAABB.lowerBound.x;
+		int count = ceil(length / MAX_OVERFLOW_RANGE);//计算需要分配多少个  
+		int splitCount = count - SplitAABBList.size();//获取到当前的分割个数
+		if (splitCount < 0) {
+			for (int i = 0; i > splitCount; i--) { 
+				auto obj = SplitAABBList.begin();
+				m_AABBAllocObj->BackObj(*obj);
+				SplitAABBList.erase(obj);
+			} 
+		} else if (splitCount > 0) {
+			for (int i = 0; i > splitCount; i--) {
+				auto obj = SplitAABBList.begin();
+				SplitAABBList.push_back(m_AABBAllocObj->RequireObj());
+			}
+		} else {//出错了
+			return;
+		}
+		float calcX = m_BodyAABB.lowerBound.x;
+		for (auto item = SplitAABBList.begin(); item != SplitAABBList.end(); item++)
+		{
+			b2AABB* aabb = *item;
+			aabb->lowerBound.x = calcX;
+			aabb->lowerBound.y = m_BodyAABB.lowerBound.y;
+			if (calcX + MAX_OVERFLOW_RANGE > m_BodyAABB.upperBound.x)
+				aabb->upperBound.x = m_BodyAABB.upperBound.x;
+			else {
+				calcX += MAX_OVERFLOW_RANGE;
+				aabb->upperBound.x = m_BodyAABB.upperBound.y;
+			} 
+		}
+	}
+	inline void CalcSplitViewAABB()//计算分割AABB
+	{
+		//首先获取到当前刚体的AABB的长度
+		float length = m_ViewAABB.upperBound.x - m_ViewAABB.lowerBound.x;
+		int count = ceil(length / MAX_OVERFLOW_RANGE);//计算需要分配多少个  
+		int splitCount = count - SplitAABBList.size();//获取到当前的分割个数
+		if (splitCount < 0) {
+			for (int i = 0; i > splitCount; i--) {
+				auto obj = SplitAABBList.begin();
+				m_AABBAllocObj->BackObj(*obj);
+				SplitAABBList.erase(obj);
+			}
+		}
+		else if (splitCount > 0) {
+			for (int i = 0; i > splitCount; i--) {
+				auto obj = SplitAABBList.begin();
+				SplitAABBList.push_back(m_AABBAllocObj->RequireObj());
+			}
+		}
+		else {//出错了
+			return;
+		}
+		float calcX = m_ViewAABB.lowerBound.x;
+		for (auto item = SplitAABBList.begin(); item != SplitAABBList.end(); item++)
+		{
+			b2AABB* aabb = *item;
+			aabb->lowerBound.x = calcX;
+			aabb->lowerBound.y = m_ViewAABB.lowerBound.y;
+			if (calcX + MAX_OVERFLOW_RANGE > m_ViewAABB.upperBound.x)
+				aabb->upperBound.x = m_ViewAABB.upperBound.x;
+			else {
+				calcX += MAX_OVERFLOW_RANGE;
+				aabb->upperBound.x = m_ViewAABB.upperBound.y;
+			}
+		}
+	}
+	//计算分割视图刚体
 	//重新计算视口
 	inline void RecalcBodyAABB()
 	{
@@ -189,7 +254,6 @@ public:
 	{ 
 	}
 };
-
 class AxisDistanceManager
 {
 public:
@@ -205,8 +269,7 @@ public:
 
 	unordered_set<ActorID> m_DelayCalcMoveList;//角色对应的范围信息
 	AxisDistanceManager() {
-	} 
-
+	}  
 	inline void AddtionCalcBody(ActorID id){
 		m_DelayCalcMoveList.insert(id);//这个角色将再下一帧被重计算
 	}
@@ -314,26 +377,26 @@ public:
 	inline void AdditionDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
 	{ 
 		//判断有无,申请
-		if (!m_XAxisBodyMap.count(viewRange.lowerBound.x)){//不存在当前坐标点的话  
-			ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
-			m_XAxisBodyMap[viewRange.lowerBound.x] = typeSet;
-		}
-		if (!m_XAxisBodyMap.count(viewRange.upperBound.x)){//不存在当前坐标点的话  
-			ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
-			m_XAxisBodyMap[viewRange.upperBound.x] = typeSet;
-		}
-		if (!m_YAxisBodyMap.count(viewRange.lowerBound.y)) {//不存在当前坐标点的话  
-			ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
-			m_YAxisBodyMap[viewRange.lowerBound.y] = typeSet;
-		}
-		if (!m_YAxisBodyMap.count(viewRange.upperBound.y)) {//不存在当前坐标点的话  
-			ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
-			m_YAxisBodyMap[viewRange.upperBound.y] = typeSet;
-		}
-		m_XAxisBodyMap[viewRange.lowerBound.x][addType]->insert(actorID);
-		m_XAxisBodyMap[viewRange.upperBound.x][addType]->insert(actorID);
-		m_YAxisBodyMap[viewRange.lowerBound.y][addType]->insert(actorID);
-		m_YAxisBodyMap[viewRange.upperBound.y][addType]->insert(actorID); 
+	    //if (!m_XAxisBodyMap.count(viewRange.lowerBound.x)){//不存在当前坐标点的话  
+	    //	ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
+	    //	m_XAxisBodyMap[viewRange.lowerBound.x] = typeSet;
+	    //}
+	    //if (!m_XAxisBodyMap.count(viewRange.upperBound.x)){//不存在当前坐标点的话  
+	    //	ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
+	    //	m_XAxisBodyMap[viewRange.upperBound.x] = typeSet;
+	    //}
+	    //if (!m_YAxisBodyMap.count(viewRange.lowerBound.y)) {//不存在当前坐标点的话  
+	    //	ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
+	    //	m_YAxisBodyMap[viewRange.lowerBound.y] = typeSet;
+	    //}
+	    //if (!m_YAxisBodyMap.count(viewRange.upperBound.y)) {//不存在当前坐标点的话  
+	    //	ViewRangeTypeSet* typeSet = AllocRangeTypeSet();
+	    //	m_YAxisBodyMap[viewRange.upperBound.y] = typeSet;
+	    //}
+	    //m_XAxisBodyMap[viewRange.lowerBound.x][addType]->insert(actorID);
+	    //m_XAxisBodyMap[viewRange.upperBound.x][addType]->insert(actorID);
+	    //m_YAxisBodyMap[viewRange.lowerBound.y][addType]->insert(actorID);
+	    //m_YAxisBodyMap[viewRange.upperBound.y][addType]->insert(actorID); 
 	}
 
 	inline void ViewRnageUserOver(float pos,bool isX,bool virify = true)
@@ -351,7 +414,7 @@ public:
 		}
 		if (!isEmpty)
 			return;
-		m_IdleViewRangeMap.push_back(rangeTypeSet);
+		//m_IdleViewRangeMap.push_back(rangeTypeSet);
 		tempMap.erase(pos); 
 	}
 	void UnregisterBody(ActorID id)

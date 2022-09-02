@@ -36,7 +36,7 @@ enum AxisType {
 	MAX_AXIS = 2//最大的轴信息
 
 };
-enum PointType{
+enum PointType {
 	BODY_TYPE = 0,
 	VIEW_TYPE = 1,
 	MAX_POINT_TYPE = 2,
@@ -46,6 +46,9 @@ public:
 	unordered_set<ActorID> m_TypeSet[PointType::MAX_POINT_TYPE];
 	ViewRangeTypeSet() {}
 	unordered_set<ActorID>& operator[](PointType type) {
+		return m_TypeSet[type];
+	}
+	unordered_set<ActorID>& GetRangeType(PointType type) {
 		return m_TypeSet[type];
 	}
 }; 
@@ -228,6 +231,10 @@ public:
 		RecycleAABBPoint(PointType::VIEW_TYPE);
 	}
 };
+//用观察这模式,来实现当某一角色移动后,观察到的玩家,需要做某些事情
+//有一个中介这模式,用于通知所有的观察者
+class 
+
 class AxisDistanceManager
 {
 public:  
@@ -298,10 +305,10 @@ public:
 			ViewRangeTypeSet* typeSet = m_ViewCellIdleGenerate.RequireObj();
 			yRangeRecordMap[viewRange.upperBound.y] = typeSet;
 		}
-		xRangeRecordMap[viewRange.lowerBound.x][addType]->insert(actorID);
-		xRangeRecordMap[viewRange.upperBound.x][addType]->insert(actorID);
-		yRangeRecordMap[viewRange.lowerBound.y][addType]->insert(actorID);
-		yRangeRecordMap[viewRange.upperBound.y][addType]->insert(actorID);
+		xRangeRecordMap[viewRange.lowerBound.x]->GetRangeType(addType).insert(actorID);
+		xRangeRecordMap[viewRange.upperBound.x]->GetRangeType(addType).insert(actorID);
+		yRangeRecordMap[viewRange.lowerBound.y]->GetRangeType(addType).insert(actorID);
+		yRangeRecordMap[viewRange.upperBound.y]->GetRangeType(addType).insert(actorID);
 	}
 	inline void RemoveDistancePoint(ActorID actorID, PointType type, const b2AABB& viewRange)
 	{
@@ -309,20 +316,18 @@ public:
 		ActorID maxActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MAX); //生成最大ID 
 		ViewRangeRecordMap& xRangeRecordMap = m_AxisBodyMap[AxisType::X_AXIS];
 		ViewRangeRecordMap& yRangeRecordMap = m_AxisBodyMap[AxisType::Y_AXIS];
-		if (xRangeRecordMap.count(viewRange.lowerBound.x)){//删除这个ID对应的X坐标点
-			auto& item = *xRangeRecordMap[viewRange.lowerBound.x]; 
-		}
-			if (xRangeRecordMap[viewRange.lowerBound.x]->operator[](type).count(minActorID))
-				xRangeRecordMap[viewRange.lowerBound.x]->operator[](type).erase(minActorID);
+		if (xRangeRecordMap.count(viewRange.lowerBound.x))//删除这个ID对应的X坐标点
+			if (xRangeRecordMap[viewRange.lowerBound.x]->GetRangeType(type).count(minActorID))
+				xRangeRecordMap[viewRange.lowerBound.x]->GetRangeType(type).erase(minActorID);
 		if (xRangeRecordMap.count(viewRange.upperBound.x))//存在当前坐标点的话 
-			if (xRangeRecordMap[viewRange.upperBound.x][type]->count(maxActorID))
-				xRangeRecordMap[viewRange.upperBound.x][type]->erase(maxActorID);
+			if (xRangeRecordMap[viewRange.upperBound.x]->GetRangeType(type).count(maxActorID))
+				xRangeRecordMap[viewRange.upperBound.x]->GetRangeType(type).erase(maxActorID);
 		if (yRangeRecordMap.count(viewRange.lowerBound.y))//存在当前坐标点的话 
-			if (yRangeRecordMap[viewRange.lowerBound.y][type]->count(minActorID))
-				yRangeRecordMap[viewRange.lowerBound.y][type]->erase(minActorID);
+			if (yRangeRecordMap[viewRange.lowerBound.y]->GetRangeType(type).count(minActorID))
+				yRangeRecordMap[viewRange.lowerBound.y]->GetRangeType(type).erase(minActorID);
 		if (yRangeRecordMap.count(viewRange.upperBound.y))//存在当前坐标点的话 
-			if (yRangeRecordMap[viewRange.upperBound.y][type]->count(maxActorID))
-				yRangeRecordMap[viewRange.upperBound.y][type]->erase(maxActorID);
+			if (yRangeRecordMap[viewRange.upperBound.y]->GetRangeType(type).count(maxActorID))
+				yRangeRecordMap[viewRange.upperBound.y]->GetRangeType(type).erase(maxActorID);
 		//判断是否使用结束了
 		ABBBRnageRecycle(viewRange.lowerBound.x, true);
 		ABBBRnageRecycle(viewRange.upperBound.x, true);
@@ -336,8 +341,8 @@ public:
 			return;
 		ViewRangeTypeSet* rangeTypeSet = tempMap[pos];
 		bool isEmpty = true;
-		for (int i = 0;i < MAX_POINT_TYPE;i++) {
-			if (!rangeTypeSet[i]->empty()) {
+		for (int type = 0;type < MAX_POINT_TYPE;type++) {
+			if (!rangeTypeSet->GetRangeType((PointType)type).empty()) {
 				isEmpty = false;
 				break;
 			}

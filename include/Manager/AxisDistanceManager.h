@@ -94,7 +94,8 @@ private:
 class ViewRange {
 public: 
 	BodyData*  m_Actor;//当前的角色 
-	unordered_set<ActorID> m_ObserverMap;//可以看到的角色列表 
+	unordered_map<ActorID,ViewRange*> m_ObserverMap;//可以看到的角色列表  
+	unordered_map<ActorID,ViewRange*> m_BeObserverMap;//用于记录每个角色被谁观察到 
 	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 	 
 	b2Vec2 m_BodyPos;//上一次的角色位置
@@ -203,10 +204,13 @@ public:
 		}
 		return 1;
 	}
+	BodyData* GetActor() {
+		return m_Actor;
+	}
 	//一组人进视野
-	bool EnterView(ActorID actorID)
+	bool EnterView(ViewRange* actor)
 	{
-		m_ObserverMap.insert(actorID);
+		m_ObserverMap[actor->GetActor()->ID()] = actor;
 	}
 	void LeaveView(ActorID actorID) 
 	{
@@ -230,10 +234,24 @@ public:
 		RecycleAABBPoint(PointType::BODY_TYPE);
 		RecycleAABBPoint(PointType::VIEW_TYPE);
 	}
-};
-//用观察这模式,来实现当某一角色移动后,观察到的玩家,需要做某些事情
-//有一个中介这模式,用于通知所有的观察者
-class 
+	//自己移动的话
+	void MoveSelf() {//通知每个观察到自己的人,当前自己移动了
+		for (auto item = m_BeObserverMap.begin(); item != m_BeObserverMap.end(); )
+		{ 
+			if (!item->second->InquiryBeObserver(this))//如果自己当前还在对方的视野下
+				item = m_BeObserverMap.erase(item);
+			else
+				item++;
+		}
+	 }
+
+	bool InquiryBeObserver(ViewRange* actor) {//移动的角色询问当前是否还在监听范围内
+		bool isObserver = this->GetBodyAABB(PointType::VIEW_TYPE).Contains(actor->GetBodyAABB(PointType::BODY_TYPE));//判断两个AABB是否重叠
+		if (!isObserver && m_ObserverMap.count(actor->m_Actor->ID()))//如果当前看得观察到了这个刚体,但现在看不见了
+			m_ObserverMap.erase(actor->m_Actor->ID()); 
+		return isObserver;//删除自己
+	}
+}; 
 
 class AxisDistanceManager
 {
@@ -266,7 +284,7 @@ public:
 	inline void RemoveDistanceAABB(ViewRange* actoViewRange, PointType type) {
 		const list<b2AABB*>& splitAABBList = actoViewRange->GetSplitAABB(PointType::BODY_TYPE);//获取到当前裁切后的AABB
 		int index = 1;
-		ActorID actorID = actoViewRange->m_Actor->ID();
+		ActorID actorID = actoViewRange->GetActor()->ID();
 		for (auto item = splitAABBList.begin();item != splitAABBList.end();item++, index++) {
 			ActorID reActorID = GEN_AABB_ID(actorID, index);//获取到当前的区域ID
 			RemoveDistancePoint(actorID, type, *(*item));//删除原有的物理碰撞盒子
@@ -384,13 +402,59 @@ public:
 			m_DelayCalcMoveList.erase(actorID); 
 		}
 	}
+	//寻找某一个轴的某一范围内的所有单元信息
+	bool InquiryAxisPoints(PointType type,AxisType axis,float inquiryDistance,float offset)//偏移单元代表当前要查询的信息(必须确保当前被查询点存在于表内)
+	{
+		m_AxisBodyMap[type]
+		if (!m_ViewObjMap.count(actorID))//对象不存在,直接删除 
+			continue;
+	}
+	//反向寻找某一轴范围内的所有单元信息
+	bool ReverseInquiyAxisPoints(PointType type, AxisType axis, float inquiryDistance, float offset)
+	{
+		//
+	}
 	//重计算
 	inline void CalcViewObj()
 	{	
 
 		//移动角色,分为三步
-		//1:首先删除当前角色所能看到的所有玩家
+		//1:首   先删除当前角色所能看到的所有玩家
 		//1-1:重新计算,视图范围内,所看到的玩家数目
+		for (auto item = m_DelayCalcMoveList.begin(); item != m_DelayCalcMoveList.end();) {
+			//首先计算当前的操作 
+			ActorID actorID = *item;
+			if (!m_ViewObjMap.count(actorID))//对象不存在,直接删除 
+				continue;
+			ViewRange* actoViewange = m_ViewObjMap[actorID];
+			actoViewange->ClearObserverTable();//清除,然后重新计算
+
+			//寻找视图范围内的所有节点
+			for (auto xBegin = m_XAxisBodyMap.find(bodyViewAABB.lowerBound.x); xBegin != m_XAxisBodyMap.end(); xBegin++) {
+				if (xBegin->first > bodyViewAABB.upperBound.x)
+					break;
+				unordered_set<ActorID>* actorList = m_XAxisBodyMap[bodyViewAABB.lowerBound.x][PointType::Body_Type];
+				if (actorList->size() == 0)
+					continue;
+				for (auto objItem = actorList->begin(); objItem != actorList->end(); objItem++) {
+					visibleSet.insert(*objItem);
+				}
+			}
+			//寻找y轴
+			for (auto yBegin = m_YAxisBodyMap.find(bodyViewAABB.lowerBound.y); yBegin != m_YAxisBodyMap.end(); yBegin++) {
+				if (yBegin->first > bodyViewAABB.upperBound.y)
+					break;
+				unordered_set<ActorID>* actorList = m_XAxisBodyMap[bodyViewAABB.lowerBound.y][PointType::Body_Type];
+				if (actorList->size() == 0)
+					continue;
+				for (auto objItem = actorList->begin(); objItem != actorList->end(); objItem++) {
+					if (visibleSet.count(*objItem) == 0)
+						continue;
+					visibleSet.erase(*objItem);
+					actoViewange->EnterView(*objItem);
+				}
+			}
+		}
 
 		//2:通知当前观察到该角色的玩家,角色发生了移动,然后进行修改
 		

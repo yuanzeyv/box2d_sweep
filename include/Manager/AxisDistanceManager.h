@@ -403,17 +403,36 @@ public:
 		}
 	}
 	//寻找某一个轴的某一范围内的所有单元信息
-	bool InquiryAxisPoints(PointType type,AxisType axis,float inquiryDistance,float offset)//偏移单元代表当前要查询的信息(必须确保当前被查询点存在于表内)
+	bool InquiryAxisPoints(unordered_set<ActorID>& outData,float findKey,PointType type,AxisType axis,float inquiryDistance,float leftOffset,float rightOffset)//偏移单元代表当前要查询的信息(必须确保当前被查询点存在于表内)
 	{
-		m_AxisBodyMap[type]
-		if (!m_ViewObjMap.count(actorID))//对象不存在,直接删除 
-			continue;
-	}
-	//反向寻找某一轴范围内的所有单元信息
-	bool ReverseInquiyAxisPoints(PointType type, AxisType axis, float inquiryDistance, float offset)
-	{
-		//
-	}
+		if ( 0 == m_AxisBodyMap[axis].count(findKey))//对象不存在,直接删除 
+			return false;
+		auto axisMap = m_AxisBodyMap[axis];
+		auto beginIterator = axisMap.find(findKey);//也就是必定存在
+		std::map<float, ViewRangeTypeSet*>::reverse_iterator rBeginITerator(beginIterator);
+		float rightDistance = inquiryDistance + rightOffset;
+		//首先循环遍历正向
+		for (auto item = beginIterator;item != axisMap.end() && item->first <= rightDistance ;item++) {
+			auto typeMap = (*item->second)[type];
+			for (auto distanceItem = typeMap.begin();distanceItem != typeMap.end();distanceItem++)
+			{
+				outData.insert(*distanceItem); 
+			}
+		}
+		//首先获取到当前寻找到的位置
+		float leftDistance = inquiryDistance - leftOffset;
+		if (leftOffset == 0) {
+			goto out;
+		}
+		rBeginITerator++;//向前移动,避免包含自己
+		for (auto item = rBeginITerator;item != axisMap.rend() && item->first >= leftDistance;item++) {
+			auto typeMap = (*item->second)[type];
+			for (auto distanceItem = typeMap.begin();distanceItem != typeMap.end();distanceItem++)
+				outData.insert(*distanceItem);
+		} 
+	out:
+		return true;
+	} 
 	//重计算
 	inline void CalcViewObj()
 	{	
@@ -428,32 +447,14 @@ public:
 				continue;
 			ViewRange* actoViewange = m_ViewObjMap[actorID];
 			actoViewange->ClearObserverTable();//清除,然后重新计算
-
-			//寻找视图范围内的所有节点
-			for (auto xBegin = m_XAxisBodyMap.find(bodyViewAABB.lowerBound.x); xBegin != m_XAxisBodyMap.end(); xBegin++) {
-				if (xBegin->first > bodyViewAABB.upperBound.x)
-					break;
-				unordered_set<ActorID>* actorList = m_XAxisBodyMap[bodyViewAABB.lowerBound.x][PointType::Body_Type];
-				if (actorList->size() == 0)
-					continue;
-				for (auto objItem = actorList->begin(); objItem != actorList->end(); objItem++) {
-					visibleSet.insert(*objItem);
-				}
-			}
-			//寻找y轴
-			for (auto yBegin = m_YAxisBodyMap.find(bodyViewAABB.lowerBound.y); yBegin != m_YAxisBodyMap.end(); yBegin++) {
-				if (yBegin->first > bodyViewAABB.upperBound.y)
-					break;
-				unordered_set<ActorID>* actorList = m_XAxisBodyMap[bodyViewAABB.lowerBound.y][PointType::Body_Type];
-				if (actorList->size() == 0)
-					continue;
-				for (auto objItem = actorList->begin(); objItem != actorList->end(); objItem++) {
-					if (visibleSet.count(*objItem) == 0)
-						continue;
-					visibleSet.erase(*objItem);
-					actoViewange->EnterView(*objItem);
-				}
-			}
+			unordered_set<ActorID> XSet;
+			unordered_set<ActorID> YSet;
+			const b2AABB& viewAABB = actoViewange->GetBodyAABB(PointType::VIEW_TYPE);
+			InquiryAxisPoints(XSet, viewAABB.lowerBound.x, PointType::BODY_TYPE, AxisType::X_AXIS, viewAABB.upperBound.x - viewAABB.lowerBound.x, 0, MAX_OVERFLOW_RANGE);//获取到X轴的列表
+			InquiryAxisPoints(YSet, viewAABB.lowerBound.y, PointType::BODY_TYPE, AxisType::Y_AXIS, viewAABB.upperBound.y - viewAABB.lowerBound.y, 0, MAX_OVERFLOW_RANGE);//获取到X轴的列表
+			//X 与 Y都在其中的话
+			//X 在其中,Y轴不在其中
+			  
 		}
 
 		//2:通知当前观察到该角色的玩家,角色发生了移动,然后进行修改

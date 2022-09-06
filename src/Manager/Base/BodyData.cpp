@@ -1,6 +1,5 @@
 #include "Manager/Base/BodyData.h"
-#include "Manager/BodyManager.h"
-#include "Manager/DistanceManager.h"
+#include "Manager/BodyManager.h" 
 #include "box2d/box2d.h"
 #include "Manager/Define.h"
 

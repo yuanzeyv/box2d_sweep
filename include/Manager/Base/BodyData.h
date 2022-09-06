@@ -10,7 +10,7 @@ public:
 	void CalcBodyAABB();//计算AABB包围盒
 	void CalcViewBody();//计算视野范围
 
-	b2Body* GetBody();
+	b2Body* GetBody() const;
 	const b2AABB& GetAABB() const;//获取到碰撞AABB
 	const b2AABB& GetViewAABB() const;//获取到视图AABB 
 	inline const b2AABB& GetIgnoreAABB() const;//获取到视图AABB 
@@ -49,7 +49,7 @@ inline BodyType BodyData::Type()
 	return BdType;
 }
 //获取到当前的类型
-inline b2Body* BodyData::GetBody()
+inline b2Body* BodyData::GetBody() const
 {
 	return Body;
 }

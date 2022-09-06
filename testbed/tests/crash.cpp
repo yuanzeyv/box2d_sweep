@@ -5,8 +5,9 @@
 #include <unordered_map>
 #include <chrono>
 #include <iostream> 
+#include "Manager/TemplateBoard.h"
 #include "Manager/BodyManager.h"   
-#include "Manager/DistanceManager.h"  
+#include "Manager/AxisDistanceManager.h"  
 #include "LuaBridge/LuaBridge.h"
 #include "Navmesh/Navmesh.h"
 #include "Manager/NavmeshManager.h"
@@ -69,17 +70,19 @@ public:
 		return new Crash;
 	}
 	
-	void DrawShape(b2Body* body, ViewType type, ViewStatus view)
+	void DrawShape(b2Body* body)
 	{
-		//获取到要绘制的主角
-		auto visbleMap = DistanceManager::Instance().GetViewBody(body->ID(), type, view);//玩家可以看到的怪物   
-		__DrawShape(visbleMap);
+		ViewRange* viewRange = AxisDistanceManager::Instance().GetViewRange(body->ID()); 
+		auto visibleMap = viewRange->GetVisibleMap();
+		 
+		__DrawShape(visibleMap);
 	}
-	void __DrawShape(unordered_map<int64_t, BodyData*>& bodyMap)
+	void __DrawShape(unordered_map<int64_t, ViewRange*>& bodyMap)
 	{   
 		for (auto item = bodyMap.begin(); item != bodyMap.end(); item++)
 		{
-			const b2Body* body = item->second->GetBody();
+			const BodyData* bodyBase = item->second->GetActor();
+			const b2Body* body = bodyBase->GetBody();
 			const b2Transform& xf = body->GetTransform();
 			for (const b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
 			{
@@ -108,11 +111,12 @@ public:
 					m_world->DrawShape(f, xf, b2Color(0.9f, 0.7f, 0.7f));
 				}
 			}
+			auto& bodyAABB = item->second->GetBodyAABB(PointType::BODY_TYPE);
 			b2Vec2 vs[4];
-			vs[0].Set(item->second->GetAABB().lowerBound.x, item->second->GetAABB().lowerBound.y);
-			vs[1].Set(item->second->GetAABB().upperBound.x, item->second->GetAABB().lowerBound.y);
-			vs[2].Set(item->second->GetAABB().upperBound.x, item->second->GetAABB().upperBound.y);
-			vs[3].Set(item->second->GetAABB().lowerBound.x, item->second->GetAABB().upperBound.y);
+			vs[0].Set(bodyAABB.lowerBound.x, bodyAABB.lowerBound.y);
+			vs[1].Set(bodyAABB.upperBound.x, bodyAABB.lowerBound.y);
+			vs[2].Set(bodyAABB.upperBound.x, bodyAABB.upperBound.y);
+			vs[3].Set(bodyAABB.lowerBound.x, bodyAABB.upperBound.y);
 			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 0.1f, 0.1f)); 
 		} 
 	}
@@ -122,12 +126,10 @@ public:
 		Lua.LuaState["Tick"](step);//tick完成之后，进行距离计算
 		NavmeshManager::Instance().Update(step); 
 		m_TimeWheelManager.Update(step);  
-		DistanceManager::Instance().DistanceCalc();
+		AxisDistanceManager::Instance().RecalcActorDistance();
 		if (Player) {
-			DrawShape(Player, ViewType::HERO_STATIC, ViewStatus::VISIBLE);
-			DrawShape(Player, ViewType::HERO_MONSTER, ViewStatus::VISIBLE);
-			DrawShape(Player, ViewType::HERO_HERO, ViewStatus::VISIBLE);
-			DrawShape(Player, ViewType::HERO_BULLET, ViewStatus::VISIBLE);
+			DrawShape(Player); 
+
 			b2Vec2 pos = Player->GetPosition();//当前的点位
 			pos.y = -pos.y;//找到正确的点位
 			float distance = NavmeshManager::Instance().Recast(Player->ID(), pos, b2Vec2(30, -30));//从当前点到 终点的距离

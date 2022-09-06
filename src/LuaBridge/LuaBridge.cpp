@@ -9,8 +9,7 @@
 #include "LuaBridge/BodyDataPort.h"
 #include "LuaBridge/BodyManagerPort.h"
 #include "LuaBridge/ColliderListenerManagerPort.h"
-#include "LuaBridge/CommonalityPort.h"
-#include "LuaBridge/DistanceManagerPort.h"
+#include "LuaBridge/CommonalityPort.h" 
 #include "LuaBridge/LuaBridge.h"
 #include "LuaBridge/PhysicsParsePort.h"
 #include "LuaBridge/DelabellaPort.h"
@@ -31,8 +30,7 @@ LuaBridge::LuaBridge()
     this->RegisterSolPort(new BodyDataPort());
     this->RegisterSolPort(new BodyManagerPort());
     this->RegisterSolPort(new ColliderListenerManagerPort());
-    this->RegisterSolPort(new CommonalityPort());
-    this->RegisterSolPort(new DistanceManagerPort());
+    this->RegisterSolPort(new CommonalityPort()); 
     this->RegisterSolPort(new PhysicsParsePort());
     this->RegisterSolPort(new DelabellaPort());
     this->RegisterSolPort(new NavmeshManagerProxy());

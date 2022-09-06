@@ -25,7 +25,7 @@
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_joint.h"
 #include "box2d/b2_world.h" 
-#include  "Manager/DistanceManager.h" 
+#include  "Manager/AxisDistanceManager.h" 
 #include <new>
 
 ActorID  b2Body::GlobalAllocIndex = 0;
@@ -542,14 +542,14 @@ void b2Body::SetFixedRotation(bool flag)
 void b2Body::SetPosition(b2Vec2 pos)
 {
 	SetTransform(pos, GetRotate());
-	DistanceManager::Instance().DistanceCalcAdd(this);
+	AxisDistanceManager::Instance().AddDelayCalcTable(this->BodyID);
 }
 
 //重新设置当前刚体的位置
 void b2Body::SetPosition(float x, float y)
 {
 	SetTransform(b2Vec2(x, y), GetRotate());
-	DistanceManager::Instance().DistanceCalcAdd(this);
+	AxisDistanceManager::Instance().AddDelayCalcTable(this->BodyID);
 }
 /**
  * Get the definition containing the body properties.
@@ -673,6 +673,6 @@ void b2Body::Dump()
 void b2Body::SynchronizeTransform()
 {
 	m_xf.q.Set(m_sweep.a);
-	m_xf.p = m_sweep.c + b2Mul(m_xf.q, m_sweep.localCenter); 
-	DistanceManager::Instance().DistanceCalcAdd(this);
+	m_xf.p = m_sweep.c + b2Mul(m_xf.q, m_sweep.localCenter);
+	AxisDistanceManager::Instance().AddDelayCalcTable(this->BodyID);
 }

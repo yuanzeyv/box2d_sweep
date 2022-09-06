@@ -75,15 +75,15 @@ end
 function CheckGroundPlayer(node,paramTable)   
     local Actor = paramTable.Actor
     local actorID = Actor:GetID("TracePlayerID")
-    local visbleHeroMap = sol.DistanceMan:Instance():GetViewBody(actorID,EnumDefine.ViewType.Monster_Hero,EnumDefine.ViewStatus.Visble)
-    --找到第一个 开始追踪
-    if not visbleHeroMap then 
-        return EnumDefine.NodeStatus.FAILURE 
-    end   
-    for v,k in pairs(visbleHeroMap) do  
-        node:SetOutput("TracePlayerID",tostring(v)) 
-        break
-    end  
+    --local visbleHeroMap = sol.DistanceMan:Instance():GetViewBody(actorID,EnumDefine.ViewType.Monster_Hero,EnumDefine.ViewStatus.Visble)
+    ----找到第一个 开始追踪
+    --if not visbleHeroMap then 
+    --    return EnumDefine.NodeStatus.FAILURE 
+    --end   
+    --for v,k in pairs(visbleHeroMap) do  
+        node:SetOutput("TracePlayerID",1) 
+    --    break
+    --end  
     return EnumDefine.NodeStatus.SUCCESS 
 end
 

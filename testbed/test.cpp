@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <time.h>   
 #include <cstdint>
-#include "Manager/Base/BodyData.h"
-#include "Manager/DistanceManager.h"
+#include "Manager/Base/BodyData.h" 
 using namespace std; 
 void DestructionListener::SayGoodbye(b2Joint* joint)
 { 

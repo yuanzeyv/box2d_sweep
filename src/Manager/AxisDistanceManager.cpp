@@ -4,9 +4,9 @@ ViewRange::ViewRange(BodyData* bodyData, AutomaticGenerator<b2AABB>* allocObj, b
 	m_ObserverRange(range),
 	m_BodyPos(MAX_DISTANCE, MAX_DISTANCE),
 	m_Actor(bodyData),
-	m_AABBAllocObj(allocObj) {}
-
-
+	m_AABBAllocObj(allocObj) {
+}
+ 
 void ViewRange::RecalcAABBRange(PointType type)//重新计算视口
 {
 	b2AABB& aabbGrid = m_BodyAABB[type];
@@ -76,7 +76,7 @@ ViewRange::~ViewRange()
 AxisDistanceManager::AxisDistanceManager() {
 }
 //在使用本函数之前应确保,当前的列表中,再无对应角色
-inline void AxisDistanceManager::AdditionDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
+void AxisDistanceManager::AdditionDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
 {
 	ActorID minActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MIN); //生成最小ID
 	ActorID maxActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MAX); //生成最大ID 
@@ -95,7 +95,7 @@ inline void AxisDistanceManager::AdditionDistancePoint(ActorID actorID, PointTyp
 	(*yRangeRecordMap[viewRange.lowerBound.y])[addType].insert(minActorID);
 	(*yRangeRecordMap[viewRange.upperBound.y])[addType].insert(maxActorID);
 }
-inline void AxisDistanceManager::RemoveDistancePoint(ActorID actorID, PointType type, const b2AABB& viewRange)
+void AxisDistanceManager::RemoveDistancePoint(ActorID actorID, PointType type, const b2AABB& viewRange)
 {
 	ActorID minActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MIN); //生成最小ID
 	ActorID maxActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MAX); //生成最大ID 
@@ -168,7 +168,7 @@ out:
 	return true;
 }
 //重计算
-inline void AxisDistanceManager::CalcViewObj()
+void AxisDistanceManager::CalcViewObj()
 {
 	//每个角色先移动一下自己,刷新当前的被刷新对象
 	for (auto actorIDItem = m_DelayCalcMoveList.begin(); actorIDItem != m_DelayCalcMoveList.end();actorIDItem++) {  

@@ -14,6 +14,7 @@
 #include "Manager/TimeWheelManager.h"
 #include "Manager/PlayerManager.h"
 using namespace std;  
+ActorID playerID = -999;
 class Crash : public Test
 {
 public:
@@ -101,10 +102,15 @@ public:
 		Lua.LuaState["Tick"](step);//tick完成之后，进行距离计算
 		NavmeshManager::Instance().Update(step); 
 		m_TimeWheelManager.Update(step);  
+
+		auto t1 = std::chrono::high_resolution_clock::now();
 		AxisDistanceManager::Instance().RecalcActorDistance();
+		auto t2 = std::chrono::high_resolution_clock::now();
+		long a =  std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+		printf("此时小号的时间未 %lld\n\r", a);
 		if (Player) {
 			DrawShape(Player); 
-
+			playerID = Player->ID();
 			b2Vec2 pos = Player->GetPosition();//当前的点位
 			pos.y = -pos.y;//找到正确的点位
 			float distance = NavmeshManager::Instance().Recast(Player->ID(), pos, b2Vec2(30, -30));//从当前点到 终点的距离

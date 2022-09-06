@@ -5,10 +5,8 @@ local MonsterBehaviorXMLDefine = [[
     <BehaviorTree ID="MainTree"> 
         <Sequence>  
             <Fallback> 
-                <SubTree ID="MonsterTracePlayerTree"/>
                 <SubTree ID="MonsterIDLETree"/>
             </Fallback>
-            <SubTree ID="MonsterMoveTree"/> 
         </Sequence>
     </BehaviorTree>  
 
@@ -36,6 +34,9 @@ local MonsterBehaviorXMLDefine = [[
     </BehaviorTree>    
     </root> 
 ]]
+
+--<SubTree ID="MonsterTracePlayerTree"/>
+--<SubTree ID="MonsterMoveTree"/> 
 function MonsterBehavior:ctor() 
     BehaivorFactor.ctor(self,MonsterBehaviorXMLDefine) 
 end   

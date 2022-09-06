@@ -4,7 +4,8 @@ ViewRange::ViewRange(BodyData* bodyData, AutomaticGenerator<b2AABB>* allocObj, b
 	m_ObserverRange(range),
 	m_BodyPos(MAX_DISTANCE, MAX_DISTANCE),
 	m_Actor(bodyData),
-	m_AABBAllocObj(allocObj) {
+	m_AABBAllocObj(allocObj),
+	m_OffsetCondtion(-9999,-9999){
 }
  
 void ViewRange::RecalcAABBRange(PointType type)//ÖØĞÂ¼ÆËãÊÓ¿Ú
@@ -27,22 +28,23 @@ void ViewRange::CalcSplitAABB(PointType type)//¼ÆËã·Ö¸î¸ÕÌå(AABB»á¾­³£Ëã,ÊÓÍ¼²»¾
 	int count = ceil(length / MAX_OVERFLOW_RANGE);//¼ÆËãĞèÒª·ÖÅä¶àÉÙ¸ö
 	if(!count) count = 1;//×îÉÙ·ÖÅäÒ»¸ö 
 	int splitCount = count - m_SplitAABBList[type].size();//»ñÈ¡µ½µ±Ç°µÄ·Ö¸î¸öÊı
-	if (splitCount < 0) {//¹é»¹¸öÊı
+ 	if (splitCount < 0) {//¹é»¹¸öÊı
 		for (int i = 0; i > splitCount; i--) {
 			auto obj = m_SplitAABBList[type].begin();
 			m_AABBAllocObj->BackObj(*obj);
 			m_SplitAABBList[type].erase(obj);
 		}
 	} else if (splitCount > 0) {
-		for (int i = 0; i > splitCount; i--) 
+		for (int i = 0; i < splitCount; i++) 
 			m_SplitAABBList[type].push_back(m_AABBAllocObj->RequireObj()); 
 	}
 	float calcX = m_BodyAABB[type].lowerBound.x;//´Ó×ó¿ªÊ¼,±éÀú
 	for (auto item = m_SplitAABBList[type].begin(); item != m_SplitAABBList[type].end(); item++){
 		b2AABB* aabb = *item;
 		aabb->lowerBound.Set(calcX, m_BodyAABB[type].lowerBound.y);
-		if (calcX + MAX_OVERFLOW_RANGE < m_BodyAABB[type].upperBound.x)
-			aabb->upperBound.Set(calcX + MAX_OVERFLOW_RANGE, m_BodyAABB[type].upperBound.y);
+		calcX += MAX_OVERFLOW_RANGE;
+		if (calcX < m_BodyAABB[type].upperBound.x)
+			aabb->upperBound.Set(calcX, m_BodyAABB[type].upperBound.y);
 		else
 			aabb->upperBound.Set(m_BodyAABB[type].upperBound.x, m_BodyAABB[type].upperBound.y);
 	}
@@ -78,8 +80,8 @@ AxisDistanceManager::AxisDistanceManager() {
 //ÔÚÊ¹ÓÃ±¾º¯ÊıÖ®Ç°Ó¦È·±£,µ±Ç°µÄÁĞ±íÖĞ,ÔÙÎŞ¶ÔÓ¦½ÇÉ«
 void AxisDistanceManager::AdditionDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange)
 {
-	ActorID minActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MIN); //Éú³É×îĞ¡ID
-	ActorID maxActorID = GEN_AABB_POINT_TYPE(actorID, PointPosType::POS_BODY_LIMIT_MAX); //Éú³É×î´óID 
+	ActorID minActorID = GEN_AABB_POINT_TYPE(actorID,((ActorID)PointPosType::POS_BODY_LIMIT_MIN)); //Éú³É×îĞ¡ID
+	ActorID maxActorID = GEN_AABB_POINT_TYPE(actorID,((ActorID)PointPosType::POS_BODY_LIMIT_MAX)); //Éú³É×î´óID 
 	ViewRangeRecordMap& xRangeRecordMap = m_AxisBodyMap[AxisType::X_AXIS];
 	ViewRangeRecordMap& yRangeRecordMap = m_AxisBodyMap[AxisType::Y_AXIS]; 
 	if (!xRangeRecordMap.count(viewRange.lowerBound.x)) //²»´æÔÚµ±Ç°×ø±êµãµÄ»°   
@@ -136,8 +138,10 @@ void AxisDistanceManager::ActorsMove()
 		actorView->RecalcBodyAABB(PointType::VIEW_TYPE);//ÖØĞÂ¼ÆËãµ±Ç°µÄÊÓÍ¼ºĞ×Ó 
 		AdditionDistanceAABB(actorView, PointType::BODY_TYPE);//½«ÏÖÓĞµÄÌí¼ÓÉÏÈ¥
 		AdditionDistanceAABB(actorView, PointType::VIEW_TYPE);//½«ÏÖÓĞµÄÌí¼ÓÉÏÈ¥ 
-		item++;
-		if (OnlyCalculate) continue;
+		if (OnlyCalculate) {
+			item++;
+			continue;
+		}
 	erase:
 		m_DelayCalcMoveList.erase(item++);
 	}
@@ -167,6 +171,7 @@ bool AxisDistanceManager::InquiryAxisPoints(unordered_set<ActorID>& outData, flo
 out:
 	return true;
 }
+extern ActorID playerID;
 //ÖØ¼ÆËã
 void AxisDistanceManager::CalcViewObj()
 {
@@ -177,9 +182,12 @@ void AxisDistanceManager::CalcViewObj()
 	}
 
 	//ÖØĞÂ¼ÆËã×Ô¼ºËù¼ûËùµÃ
-	for (auto item = m_DelayCalcMoveList.begin(); item != m_DelayCalcMoveList.end();) {
+	for (auto item = m_DelayCalcMoveList.begin(); item != m_DelayCalcMoveList.end(); item++) {
 		//Ê×ÏÈ¼ÆËãµ±Ç°µÄ²Ù×÷ 
 		ActorID actorID = *item;
+		if (playerID == actorID) {
+			printf("Ö÷½ÇÒÆ¶¯ÁË\n\r");
+		}
 		ViewRange* actoViewange = m_ViewObjMap[actorID];
 		actoViewange->ClearObserverTable();//Çå³ı,È»ºóÖØĞÂ¼ÆËã
 		unordered_set<ActorID> XSet;
@@ -191,7 +199,7 @@ void AxisDistanceManager::CalcViewObj()
 		for (auto relevanceItem = XSet.begin(); relevanceItem != XSet.end(); relevanceItem++) {
 			auto obseverItem = m_ViewObjMap[*relevanceItem];
 			//¼ÆËãAABB
-			if (obseverItem->GetBodyAABB(PointType::BODY_TYPE).Contains(actoViewange->GetBodyAABB(PointType::VIEW_TYPE)))
+			if (b2TestOverlap(obseverItem->GetBodyAABB(PointType::BODY_TYPE), actoViewange->GetBodyAABB(PointType::VIEW_TYPE)))
 			{
 				actoViewange->EnterView(obseverItem);
 			}

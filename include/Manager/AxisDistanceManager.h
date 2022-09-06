@@ -12,10 +12,10 @@
 //bit 56-64 剩余类型
 //bit 48-55 区域ID
 //bit 00-47  角色ID
-#define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ( (type & 1) << 56)) //生成一个设置点位类型的数组 
-#define GEN_AABB_ID(actorID,index) (actorID | ((index & 0xffff) << 48 ))//生成一个ID
+#define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((type & 1) << 55)) //生成一个设置点位类型的数组 
+#define GEN_AABB_ID(actorID,index) (actorID | ((index & 0xffff) << 47 ))//生成一个ID
 
-#define GET_ACTOR_ID(actorID) (actorID & (~0xffff))//获取到当前的角色ID
+#define GET_ACTOR_ID(actorID) (actorID & (~((ActorID)(0xffff) << 47)))//获取到当前的角色ID
 enum PointPosType {//要不要应该都可以
 	POS_BODY_LIMIT_MAX = 0,//点位最大
 	POS_BODY_LIMIT_MIN = 1,//点位最小 
@@ -41,7 +41,12 @@ public:
 		return m_TypeSet[type];
 	}
 };
-typedef std::map<float, ViewRangeTypeSet*> ViewRangeRecordMap;
+struct CompareFloat {
+	bool operator()(const float& k1, const float& k2) const{
+		return k1 < k2;
+	}
+};
+typedef std::map<float, ViewRangeTypeSet*, CompareFloat> ViewRangeRecordMap;
 
    
 
@@ -237,23 +242,23 @@ inline void AxisDistanceManager::RecalcActorDistance() {
 }
 
 inline void AxisDistanceManager::RemoveDistanceAABB(ViewRange* actoViewRange, PointType type){
-	int index = 1;
+	ActorID index = 1;
 	auto & splitAABBList = actoViewRange->GetSplitAABB(type);//获取到当前裁切后的AABB
 	ActorID actorID = actoViewRange->GetActor()->ID();//获取到角色的ID
 	for (auto aabbItem = splitAABBList.begin(); aabbItem != splitAABBList.end(); aabbItem++ ) {
 		ActorID reActorID = GEN_AABB_ID(actorID, index);//获取到当前的区域ID
 		b2AABB* aabb = *aabbItem;
-		RemoveDistancePoint(actorID, type,*aabb);//删除原有的物理碰撞盒子
+		RemoveDistancePoint(reActorID, type,*aabb);//删除原有的物理碰撞盒子
 		index++;
 	}
 }
 inline void AxisDistanceManager::AdditionDistanceAABB(ViewRange* actoViewRange, PointType type) {
 	const std::list<b2AABB*>& splitAABBList = actoViewRange->GetSplitAABB(type);//获取到当前裁切后的AABB
-	int index = 1;
+	int64_t index = 1;
 	ActorID actorID = actoViewRange->GetActor()->ID();
 	for (auto item = splitAABBList.begin(); item != splitAABBList.end(); item++, index++) {
 		ActorID reActorID = GEN_AABB_ID(actorID, index);//获取到当前的区域ID
-		AdditionDistancePoint(actorID, type, *(*item));//删除原有的物理碰撞盒子
+		AdditionDistancePoint(reActorID, type, *(*item));//删除原有的物理碰撞盒子
 	}
 }
 inline void AxisDistanceManager::ABBBRnageRecycle(float pos, ViewRangeRecordMap& axisMap)

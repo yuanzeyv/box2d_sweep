@@ -1,82 +1,94 @@
 #pragma once
-#include "Manager/Base/BodyData.h"
-#include "Manager/BodyManager.h" 
+#include "Manager/Base/BodyData.h" 
 #include <map>
 #include <list>     
 #include <unordered_map>
 #include <unordered_set>
 #include <typeinfo>
 #include "Define.h" 
-#include "TemplateBoard.h"
-#define MAX_OVERFLOW_RANGE (0.5f) //¸ÕÌå·Ö¸î¾àÀë,Ò²ÓÃÓÚ¼ì²â
+#include "TemplateBoard.h" 
+//ÓÎÏ··ÖÎªĞ¡ÎïÌå,ÖĞÎïÌåÒÔ¼°´óÎïÌå. 
+//³¬¹ı´óÎïÌåµÄµ¥Ôª,¿ÉÄÜ»áÎŞ·¨Õı³£µÄÏÔÊ¾
+
 //bit 56-64 Ê£ÓàÀàĞÍ
 //bit 48-55 ÇøÓòID
 //bit 00-47  ½ÇÉ«ID
-#define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((type & 1) << 55)) //Éú³ÉÒ»¸öÉèÖÃµãÎ»ÀàĞÍµÄÊı×é 
-#define GEN_AABB_ID(actorID,index) (actorID | ((index & 0xffff) << 47 ))//Éú³ÉÒ»¸öID
-
+#define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((type & 3) << 47)) //Éú³É×î´ó×îĞ¡µãÀàĞÍ
 #define GET_ACTOR_ID(actorID) (actorID & (~((ActorID)(0xffff) << 47)))//»ñÈ¡µ½µ±Ç°µÄ½ÇÉ«ID
 enum PointPosType {//Òª²»ÒªÓ¦¸Ã¶¼¿ÉÒÔ
-	POS_BODY_LIMIT_MAX = 0,//µãÎ»×î´ó
-	POS_BODY_LIMIT_MIN = 1,//µãÎ»×îĞ¡ 
-};
-
-enum AxisType {
-	X_AXIS = 0,//xÖá
-	Y_AXIS = 1,//yÖá
-	MAX_AXIS = 2//×î´óµÄÖáĞÅÏ¢
-};
-
+	POS_BODY_LIMIT_LEFT_MAX = 0,//×óÉÏ
+	POS_BODY_LIMIT_LEFT_MIN = 1,//×óÏÂ 
+	POS_BODY_LIMIT_RIGHT_MAX = 2,//ÓÒÉÏ 
+	POS_BODY_LIMIT_RIGHT_MIN = 3,//ÓÒÏÂ 
+	POS_BODY_LIMIT_NUM_MAX = 4,//×î´ó¸öÊı
+}; 
 enum PointType {
 	BODY_TYPE = 0,
 	VIEW_TYPE = 1,
 	MAX_POINT_TYPE = 2,
-};  
-class ViewRangeTypeSet {
-public:
-	std::unordered_set<ActorID> m_TypeSet[PointType::MAX_POINT_TYPE];
-	ViewRangeTypeSet() { 
-	}
-	std::unordered_set<ActorID>& operator[](PointType type) {
-		return m_TypeSet[type];
-	}
 };
 struct CompareFloat {
-	bool operator()(const float& k1, const float& k2) const{
-		return k1 < k2;
+	bool operator()(const b2Vec2& k1, const b2Vec2& k2) const {
+		if (k1.x < k2.x)
+			return true;
+		if (k1.x > k2.x)
+			return false;
+		return k1.y < k2.y;
 	}
+}; 
+class SmartActorIDMan {
+public:
+	inline void Insert(ActorID actorID, PointPosType type)
+	{
+		actorID = GEN_AABB_POINT_TYPE(actorID, type);//Éú³ÉÒ»¸öĞÂµÄ
+		m_ActorSet.insert(actorID);
+	}
+	inline void Erease(ActorID actorID, PointPosType type)
+	{
+		actorID = GEN_AABB_POINT_TYPE(actorID, type);//Éú³ÉÒ»¸öĞÂµÄ
+		m_ActorSet.erase(actorID);
+	}
+	inline const std::unordered_set<ActorID>& GetTable() {
+		return  m_ActorSet;
+		
+	}
+	inline void Init() {
+		m_ActorSet.clear();
+	}
+	inline bool IsInValid() { 
+		return m_ActorSet.size() == 0;
+	}
+private: 
+	std::unordered_set<ActorID> m_ActorSet;//¼ÇÂ¼Ò»×éÎŞĞòµÄ½ÇÉ«ID
 };
-typedef std::map<float, ViewRangeTypeSet*, CompareFloat> ViewRangeRecordMap;
-
-   
+typedef std::map<b2Vec2, SmartActorIDMan*, CompareFloat > ViewRangeRecordMap;//ÊÓÍ¼Öá
 
 //µ±Ç°µÄÊÓÍ¼·¶Î§
 class ViewRange{
 public:
-	ViewRange(BodyData* bodyData, AutomaticGenerator<b2AABB>* allocObj, b2Vec2 range = b2Vec2(0.5, 0.5));//ÊÓÍ¼µÄ³õÊ¼»¯
+	ViewRange(BodyData* bodyData,b2Vec2 range = b2Vec2(0.5, 0.5));//ÊÓÍ¼µÄ³õÊ¼»¯
 	BodyData* GetActor(); //»ñÈ¡µ½µ±Ç°µÄ½ÇÉ« 
 	const b2Vec2& GetViewRange(); //»ñÈ¡µ½µ±Ç°µÄ¹Û²ì·¶Î§
 	const b2Vec2& GetBodyPos();//»ñÈ¡µ½µ±Ç°Íæ¼ÒµÄµãÎ» 
 	const std::unordered_map<ActorID, ViewRange*>& GetVisibleMap();//»ñÈ¡µ½ËùÓĞ¿É¼û½ÇÉ«
+	const std::unordered_map<ActorID, ViewRange*>& GetBeObseverView(ViewRange* actor);//Ä³Ò»¸ö½ÇÉ«½øÈëµ½ÁË±»¹Û²ìµÄÊÓÍ¼
+	const b2AABB& GetBodyAABB() const;//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB   
+	const b2AABB& GetViewAABB() const;//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
 
 	bool EnterView(ViewRange* actor);//Ä³Ò»¸ö½ÇÉ«½øÈëÊÓÒ° 
 	void LeaveView(ActorID actorID); //Ä³Ò»¸ö½ÇÉ«Àë¿ªÁËÊÓÍ¼ 
 	bool EnterBeObseverView(ViewRange* actor);//Ä³Ò»¸ö½ÇÉ«½øÈëµ½ÁË±»¹Û²ìµÄÊÓÍ¼
 
-	bool IsContain(ViewRange* actor); //¼ÆËãÖÆ¶¨AABBÊÇ°üº¬×Ô¼º
+	bool InObserverContain(ViewRange* actor); //¼ÆËãÖÆ¶¨AABBÊÇ°üº¬×Ô¼º
 	void ClearObserverTable();//ÇåÀíµ±Ç°¹Û²ìµ½µÄËùÓĞ½ÇÉ«
 
 	int IsRefreshActorView();//¼ÆËãÊÓ²î,´óÓÚ¶àÉÙ²Å»áÖØ¼ÆËã 
 	void MoveSelf(); //Í¨ÖªÃ¿¸ö¹Û²ìµ½×Ô¼ºµÄÈË,µ±Ç°×Ô¼ºÒÆ¶¯ÁË  
 	void RecalcBodyPosition();//ÖØĞÂ»ñÈ¡µ½½ÇÉ«ÉÏÒ»´ÎÎ´Ë¢ĞÂµÄÎ»ÖÃ
 
-	const b2AABB& GetBodyAABB(PointType type) const;//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB  
-	const std::list<b2AABB*>& GetSplitAABB(PointType type);//»ñÈ¡µ½µ±Ç°µÄ²Ã¼ôAABB 
-	void RecalcAABBRange(PointType type);//ÖØĞÂ¼ÆËãÊÓ¿Ú 
-	void RecalcBodyAABB(PointType type);//ÖØĞÂ¼ÆËãÊÓ¿Ú
-	void RecalcRefreshCondtion();//ÖØ¼ÆËãË¢ĞÂÌõ¼ş  
-	void CalcSplitAABB(PointType type);//¼ÆËã·Ö¸î¸ÕÌå(AABB»á¾­³£Ëã,ÊÓÍ¼²»¾­³£Ëã)
-	void RecycleAABBPoint(PointType type);//»ØÊÕµãÎ» 
+	void RecalcBodyAABB();//ÖØĞÂ¼ÆËãÊÓ¿Ú 
+	void RecalcViewAABB();//ÖØĞÂ¼ÆËãÊÓ¿Ú
+	void RecalcRefreshCondtion();//ÖØ¼ÆËãË¢ĞÂÌõ¼ş    
 	~ViewRange(); 
 private:
 	BodyData* m_Actor;//µ±Ç°µÄ½ÇÉ« 
@@ -86,12 +98,10 @@ private:
 	std::unordered_map<ActorID, ViewRange*> m_BeObserverMap;//ÓÃÓÚ¼ÇÂ¼Ã¿¸ö½ÇÉ«±»Ë­¹Û²ìµ½ 
 	b2Vec2 m_ObserverRange;//µ±Ç°½ÇÉ«¿ÉÒÔ¹Û²ìµ½µÄ·¶Î§  
 
-	b2AABB m_BodyAABB[PointType::MAX_POINT_TYPE];//¼ÇÂ¼½ÇÉ«ÉÏÒ»´ÎÌí¼ÓÊ±µÄAABB     
-	std::list<b2AABB*> m_SplitAABBList[PointType::MAX_POINT_TYPE];//×îÖÕµÄ,·Ö¸îºóµÄAABB
+	b2AABB m_BodyAABB;//¼ÇÂ¼½ÇÉ«ÉÏÒ»´ÎÌí¼ÓÊ±µÄAABB    
+	b2AABB m_ViewAABB;//¼ÇÂ¼½ÇÉ«ÉÏÒ»´ÎÌí¼ÓÊ±µÄAABB      
 
-	b2Vec2 m_OffsetCondtion;//Æ«ÒÆ¼«ÏŞ
-
-	AutomaticGenerator<b2AABB>* m_AABBAllocObj;//±£´æÒ»ÏÂ·ÖÅäAABBµÄ¶ÔÏó
+	b2Vec2 m_OffsetCondtion;//Æ«ÒÆ¼«ÏŞ 
 }; 
 
 class AxisDistanceManager
@@ -101,37 +111,33 @@ public:
 	bool RegisterBody(BodyData* actor);//×¢²áÒ»¸ö¶ÔÏóµ½¾àÀë¹ÜÀí
 	void UnregisterBody(ActorID id);//·´×¢²á
 	void UnregisterBody(BodyData* actor);//·´×¢²á
-	//ÖØ¼ÆËã
-	void RecalcActorDistance();//ÖØĞÂ¼ÆËã½ÇÉ«¾àÀë
-	void ActorsMove();
-	void CalcViewObj();//ÖØ¼ÆËã
 	//¼ÆËãÇøÓò 
 	void AddDelayCalcTable(ActorID id);//Ìí¼ÓÒ»¸ö¸ÕÌå¼ÆËã¶ÔÏó 
-	void AdditionDistanceAABB(ViewRange* actoViewRange, PointType type);
-	void RemoveDistanceAABB(ViewRange* actoViewRange, PointType type);
-	void AdditionDistancePoint(ActorID actorID, PointType addType, const b2AABB& viewRange);
-	void RemoveDistancePoint(ActorID actorID, PointType type, const b2AABB& viewRange); 
-	void ABBBRnageRecycle(float pos, ViewRangeRecordMap& axisMap);//»ØÊÕAABBµ¥Ôª
+	void AdditionViewAABB(ViewRange* actoViewRange);//Ìí¼ÓÒ»¸öÊÓÍ¼AABB
+	void RemoveViewAABB(ViewRange* actoViewRange); 
 	//»ñÈ¡µ½µ¥Ôª
 	ViewRange* GetViewRange(ActorID actorID);
+	//ÖØ¼ÆËã
+	void Update();//ÖØĞÂ¼ÆËã½ÇÉ«¾àÀë
+	void ActorsMove();
+	void CalcViewObj();//ÖØ¼ÆËã
 
 	static AxisDistanceManager& Instance();
 private:
 	AxisDistanceManager();
 	//Ñ°ÕÒÄ³Ò»¸öÖáµÄÄ³Ò»·¶Î§ÄÚµÄËùÓĞµ¥ÔªĞÅÏ¢
-	bool InquiryAxisPoints(std::unordered_set<ActorID>& outData, float findKey, PointType type, AxisType axis, float inquiryDistance, float leftOffset = 0, float rightOffset = 0);//Æ«ÒÆµ¥Ôª´ú±íµ±Ç°Òª²éÑ¯µÄĞÅÏ¢(±ØĞëÈ·±£µ±Ç°±»²éÑ¯µã´æÔÚÓÚ±íÄÚ)
+	void InquiryAxisPoints(std::unordered_set<ActorID>& outData,const b2AABB& viewAABB);
 private:
-	//ÄÚ´æ·ÖÅä¶ÔÏó
-	AutomaticGenerator<b2AABB> m_AABBIdleGenerate; //×Ô¶¯µÄB2AABB¶ÔÏó¹ÜÀí
-	AutomaticGenerator<ViewRangeTypeSet> m_ViewCellIdleGenerate;//×Ô¶¯µÄÉú³ÉÊÓÍ¼¶ÔÏó¹ÜÀíµÄ¶ÔÏó 
+	//ÄÚ´æ·ÖÅä¶ÔÏó 
+	AutomaticGenerator<SmartActorIDMan> m_ViewCellIdleGenerate;//×Ô¶¯µÄÉú³ÉÊÓÍ¼¶ÔÏó¹ÜÀíµÄ¶ÔÏó 
 	//µ±Ç°ËùÓĞµÄ¾àÀë¶ÔÏó
-	ViewRangeRecordMap m_AxisBodyMap[AxisType::MAX_AXIS];//ÆäÖĞÓĞX×ø±êÁĞºÍY×ø±êÁĞ 
+	ViewRangeRecordMap m_AxisBodyMap;//ÆäÖĞÓĞX×ø±êÁĞºÍY×ø±êÁĞ 
 	std::unordered_map<ActorID, ViewRange*> m_ViewObjMap;//½ÇÉ«¶ÔÓ¦µÄ·¶Î§ĞÅÏ¢ 
 	std::unordered_set<ActorID> m_DelayCalcMoveList;//½ÇÉ«¶ÔÓ¦µÄ·¶Î§ĞÅÏ¢
 }; 
 
 inline void ViewRange::ClearObserverTable() //ÇåÀíµ±Ç°¹Û²ìµ½µÄËùÓĞ½ÇÉ«
-{
+{  
 	m_ObserverMap.clear();
 }
 
@@ -147,39 +153,53 @@ inline void ViewRange::LeaveView(ActorID actorID) //Ä³Ò»¸ö½ÇÉ«Àë¿ªÁËÊÓÍ¼
 {
 	m_ObserverMap.erase(actorID);
 }
-inline const b2AABB& ViewRange::GetBodyAABB(PointType type) const//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
+inline const b2AABB& ViewRange::GetBodyAABB() const//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
 {
-	return m_BodyAABB[type];//»ñÈ¡µ½Ä³Ò»ÀàĞÍµÄAABBºĞ×Ó
+	return m_BodyAABB;//»ñÈ¡µ½Ä³Ò»ÀàĞÍµÄAABBºĞ×Ó
 }
-inline const std::list<b2AABB*>& ViewRange::GetSplitAABB(PointType type)//»ñÈ¡µ½µ±Ç°µÄ²Ã¼ôAABB
+inline const b2AABB& ViewRange::GetViewAABB() const//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
 {
-	return m_SplitAABBList[type];
+	return m_ViewAABB;//»ñÈ¡µ½Ä³Ò»ÀàĞÍµÄAABBºĞ×Ó
 }
 
-inline void ViewRange::RecalcBodyAABB(PointType type)//ÖØĞÂ¼ÆËãÊÓ¿Ú
+inline void ViewRange::RecalcViewAABB()//ÖØĞÂ¼ÆËãÊÓ¿Ú
 {
-	RecalcAABBRange(type);//¼ÆËã»ù´¡µÄAABB
-	CalcSplitAABB(type);//¼ÆËãÇĞ¸îºóµÄAABB
+	m_ViewAABB.lowerBound.Set(m_BodyPos.x - m_ObserverRange.x, m_BodyPos.y - m_ObserverRange.x);//ÖØĞÂ¼ÆËãÊÓÍ¼
+	m_ViewAABB.upperBound.Set(m_BodyPos.x + m_ObserverRange.y, m_BodyPos.y + m_ObserverRange.y);
+}
+inline void ViewRange::RecalcBodyAABB()//ÖØĞÂ¼ÆËãÊÓ¿Ú
+{
+	this->m_Actor->CalcBodyAABB();
+	const b2AABB& bodyAABB = m_Actor->GetAABB();//»ñÈ¡µ½½ÇÉ«µÄAABB
+	memcpy(&m_BodyAABB, &bodyAABB, sizeof(b2AABB));//¿½±´Êı¾İ
+	RecalcRefreshCondtion(); 
 }
 
 inline void ViewRange::RecalcBodyPosition()
-{
+{ 
 	m_BodyPos = m_Actor->GetBody()->GetPosition();
 }
 inline void ViewRange::RecalcRefreshCondtion()//ÖØ¼ÆËãË¢ĞÂÌõ¼ş
 {	//½ÇÉ«ÒÆ¶¯ÁËÏà¶ÔÓÚ½ÇÉ«µ±Ç°°Ù·ÖÖ®10µÄÎ»ÖÃµÄ»°
-	m_OffsetCondtion = m_BodyAABB[PointType::BODY_TYPE].upperBound - m_BodyAABB[PointType::BODY_TYPE].lowerBound;
+	m_OffsetCondtion = m_BodyAABB.upperBound - m_BodyAABB.lowerBound; 
 	m_OffsetCondtion *= 0.1;
 }
 inline BodyData* ViewRange::GetActor() {//»ñÈ¡µ½µ±Ç°µÄ½ÇÉ«
 	return m_Actor;
 }
 
+inline bool ViewRange::InObserverContain(ViewRange* actor) {//ÒÆ¶¯µÄ½ÇÉ«Ñ¯ÎÊµ±Ç°ÊÇ·ñ»¹ÔÚ¼àÌı·¶Î§ÄÚ 
+	if (!b2TestOverlap(m_ViewAABB, actor->m_BodyAABB)) {//Èç¹ûµ±Ç°¿´µÃ¹Û²ìµ½ÁËÕâ¸ö¸ÕÌå,µ«ÏÖÔÚ¿´²»¼ûÁË
+		m_ObserverMap.erase(actor->m_Actor->ID());//Ö´ĞĞÉ¾³ı
+		return false;
+	}
+	return true;//É¾³ı×Ô¼º
+}
 inline int ViewRange::IsRefreshActorView()//¼ÆËãÊÓ²î,´óÓÚ¶àÉÙ²Å»áÖØ¼ÆËã
 {
 	const b2Vec2& bodyPos = m_Actor->GetBody()->GetPosition();//»ñÈ¡µ½µ±Ç°µÄÎ»ÖÃ 
 	float xMinus = std::abs(bodyPos.x - m_BodyPos.x);
-	float yMinus = std::abs(bodyPos.x - m_BodyPos.x);
+	float yMinus = std::abs(bodyPos.y - m_BodyPos.y);
 	if (xMinus > m_OffsetCondtion.x || yMinus > m_OffsetCondtion.y)
 		return 1;
 	return 0;
@@ -201,24 +221,27 @@ inline bool ViewRange::EnterBeObseverView(ViewRange* actor)//Ä³Ò»¸ö½ÇÉ«½øÈëµ½ÁË±
 	return true;
 }
 
-inline void ViewRange::RecycleAABBPoint(PointType type)//»ØÊÕµãÎ»
+inline const std::unordered_map<ActorID, ViewRange*>& ViewRange::GetBeObseverView(ViewRange* actor)//Ä³Ò»¸ö½ÇÉ«½øÈëµ½ÁË±»¹Û²ìµÄÊÓÍ¼
 {
-	for (auto item = m_SplitAABBList->begin(); item != m_SplitAABBList->end();) {
-		m_AABBAllocObj->BackObj(*item);//Ê×ÏÈ·µ»Øµ±Ç°µÄĞÅÏ¢
-		m_SplitAABBList->erase(item++);//É¾³ıµ±Ç°Õâ¸ö
-	}
+	return m_BeObserverMap;
 }
 
 inline void AxisDistanceManager::AddDelayCalcTable(ActorID id) {
 	m_DelayCalcMoveList.insert(id);//Õâ¸ö½ÇÉ«½«ÔÙÏÂÒ»Ö¡±»ÖØ¼ÆËã
 }
+inline bool AxisDistanceManager::RegisterBody(BodyData* actor) {
+	ActorID actorID = actor->ID();
+	if (m_ViewObjMap.count(actorID)) return false;//¶ÔÏóÒÑ¾­×¢²á  
+	m_ViewObjMap[actorID] = new ViewRange(actor);//×¢²á½øÈë¼´¿É
+	AddDelayCalcTable(actorID);//ÔÚÏÂÒ»Ö¡ÖØĞÂ¼ÆËã½ÇÉ«ĞÅÏ¢
+	return true;
+}
 
 inline void AxisDistanceManager::UnregisterBody(ActorID id)
 {
 	if (!m_ViewObjMap.count(id)) return;//Î´×¢²á¹ı
-	ViewRange* rangeObj = m_ViewObjMap[id];//»ñÈ¡µ½¶ÔÏó
-	RemoveDistanceAABB(rangeObj, PointType::BODY_TYPE);//É¾³ıµ½µ±Ç°µÄAABbĞÅÏ¢
-	RemoveDistanceAABB(rangeObj, PointType::VIEW_TYPE);
+	ViewRange* rangeObj = m_ViewObjMap[id];//»ñÈ¡µ½¶ÔÏó 
+	RemoveViewAABB( rangeObj);
 	delete rangeObj;
 	m_ViewObjMap.erase(id);
 }
@@ -228,50 +251,12 @@ inline void AxisDistanceManager::UnregisterBody(BodyData* actor)
 {
 	UnregisterBody(actor->ID());
 }
-inline bool AxisDistanceManager::RegisterBody(BodyData* actor) {
-	ActorID actorID = actor->ID();
-	if (m_ViewObjMap.count(actorID)) return false;//¶ÔÏóÒÑ¾­×¢²á  
-	m_ViewObjMap[actorID] = new ViewRange(actor, &m_AABBIdleGenerate);//×¢²á½øÈë¼´¿É
-	AddDelayCalcTable(actorID);//ÔÚÏÂÒ»Ö¡ÖØĞÂ¼ÆËã½ÇÉ«ĞÅÏ¢
-	return true;
-}
 //ÖØĞÂ¼ÆËã½ÇÉ«¾àÀë
-inline void AxisDistanceManager::RecalcActorDistance() {
-	ActorsMove();//¸üĞÂËùÓĞ½ÇÉ«µÄÊÓ¾à,°üÀ¨Åö×²AABB 
-	CalcViewObj();//¼ÆËã½ÇÉ«¿ÉÒÔ¹Û²ìµ½µÄÊÓÍ¼¶ÔÏó 
+inline void AxisDistanceManager::Update() {
+	ActorsMove();//¸üĞÂËùÓĞ½ÇÉ«µÄÊÓ¾à,°üÀ¨Åö×²AABB  
+	CalcViewObj();//¼ÆËã½ÇÉ«¿ÉÒÔ¹Û²ìµ½µÄÊÓÍ¼¶ÔÏó  
 }
-
-inline void AxisDistanceManager::RemoveDistanceAABB(ViewRange* actoViewRange, PointType type){
-	ActorID index = 1;
-	auto & splitAABBList = actoViewRange->GetSplitAABB(type);//»ñÈ¡µ½µ±Ç°²ÃÇĞºóµÄAABB
-	ActorID actorID = actoViewRange->GetActor()->ID();//»ñÈ¡µ½½ÇÉ«µÄID
-	for (auto aabbItem = splitAABBList.begin(); aabbItem != splitAABBList.end(); aabbItem++ ) {
-		ActorID reActorID = GEN_AABB_ID(actorID, index);//»ñÈ¡µ½µ±Ç°µÄÇøÓòID
-		b2AABB* aabb = *aabbItem;
-		RemoveDistancePoint(reActorID, type,*aabb);//É¾³ıÔ­ÓĞµÄÎïÀíÅö×²ºĞ×Ó
-		index++;
-	}
-}
-inline void AxisDistanceManager::AdditionDistanceAABB(ViewRange* actoViewRange, PointType type) {
-	const std::list<b2AABB*>& splitAABBList = actoViewRange->GetSplitAABB(type);//»ñÈ¡µ½µ±Ç°²ÃÇĞºóµÄAABB
-	int64_t index = 1;
-	ActorID actorID = actoViewRange->GetActor()->ID();
-	for (auto item = splitAABBList.begin(); item != splitAABBList.end(); item++, index++) {
-		ActorID reActorID = GEN_AABB_ID(actorID, index);//»ñÈ¡µ½µ±Ç°µÄÇøÓòID
-		AdditionDistancePoint(reActorID, type, *(*item));//É¾³ıÔ­ÓĞµÄÎïÀíÅö×²ºĞ×Ó
-	}
-}
-inline void AxisDistanceManager::ABBBRnageRecycle(float pos, ViewRangeRecordMap& axisMap)
-{
-	if (!axisMap.count(pos)) return;//²»´æÔÚµÄ»°
-	ViewRangeTypeSet* rangeTypeSet = axisMap[pos];
-	for (int type = 0; type < MAX_POINT_TYPE; type++)//Ñ­»·±éÀúÊÓÍ¼µãÎ» ºÍ ×î´óµãÎ»ÊÇ·ñ¶¼Îª¿Õ
-		if (!(*rangeTypeSet)[(PointType)type].empty())
-			return;
-	m_ViewCellIdleGenerate.BackObj(rangeTypeSet);//»ØÊÕËü
-	axisMap.erase(pos);
-}
-
+  
 inline AxisDistanceManager& AxisDistanceManager::Instance() {
 	static AxisDistanceManager Instance;
 	return Instance;

@@ -103,11 +103,7 @@ public:
 		NavmeshManager::Instance().Update(step); 
 		m_TimeWheelManager.Update(step);  
 
-		auto t1 = std::chrono::high_resolution_clock::now();
-		AxisDistanceManager::Instance().RecalcActorDistance();
-		auto t2 = std::chrono::high_resolution_clock::now();
-		long a =  std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-		printf("此时小号的时间未 %lld\n\r", a);
+		AxisDistanceManager::Instance().Update();
 		if (Player) {
 			DrawShape(Player); 
 			playerID = Player->ID();

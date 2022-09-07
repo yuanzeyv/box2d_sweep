@@ -15,16 +15,8 @@ void ViewRange::MoveSelf() {//通知每个观察到自己的人,当前自己移动了
 		else
 			item++;
 	}
-}
-
-
-ViewRange::~ViewRange()
-{ 
-}
-
-
-AxisDistanceManager::AxisDistanceManager() {
-}  
+} 
+ 
 void AxisDistanceManager::ActorsMove()
 {
 	auto deleteSum = 0;
@@ -53,8 +45,7 @@ void AxisDistanceManager::ActorsMove()
 		}
 	erase:
 		m_DelayCalcMoveList.erase(item++);
-	}
-
+	} 
 	printf("删除总时长 %lld  计算总时长 %lld  添加总时长%lld\n\r", deleteSum, recalcSum, addSum);
 }
 

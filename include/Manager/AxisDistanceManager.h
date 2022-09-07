@@ -6,12 +6,9 @@
 #include <unordered_set>
 #include <typeinfo>
 #include "Define.h" 
-#include "TemplateBoard.h" 
-//游戏分为小物体,中物体以及大物体. 
-//超过大物体的单元,可能会无法正常的显示
-
-//bit 56-64 剩余类型
-//bit 48-55 区域ID
+#include "TemplateBoard.h"  
+//bit 50-64 剩余类型
+//bit 48-49 区域ID
 //bit 00-47  角色ID
 #define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((type & 3) << 47)) //生成最大最小点类型
 #define GET_ACTOR_ID(actorID) (actorID & (~((ActorID)(0xffff) << 47)))//获取到当前的角色ID
@@ -89,7 +86,7 @@ public:
 	void RecalcBodyAABB();//重新计算视口 
 	void RecalcViewAABB();//重新计算视口
 	void RecalcRefreshCondtion();//重计算刷新条件    
-	~ViewRange(); 
+	~ViewRange() {}
 private:
 	BodyData* m_Actor;//当前的角色 
 	b2Vec2 m_BodyPos;//上一次的角色位置
@@ -124,7 +121,7 @@ public:
 
 	static AxisDistanceManager& Instance();
 private:
-	AxisDistanceManager();
+	AxisDistanceManager() {}
 	//寻找某一个轴的某一范围内的所有单元信息
 	void InquiryAxisPoints(std::unordered_set<ActorID>& outData,const b2AABB& viewAABB);
 private:
@@ -217,6 +214,8 @@ inline const std::unordered_map<ActorID, ViewRange*>& ViewRange::GetVisibleMap()
 
 inline bool ViewRange::EnterBeObseverView(ViewRange* actor)//某一个角色进入到了被观察的视图
 {
+	if (m_BeObserverMap.count(actor->GetActor()->ID()))//存在就不创建
+		return true;
 	m_BeObserverMap[actor->GetActor()->ID()] = actor;
 	return true;
 }

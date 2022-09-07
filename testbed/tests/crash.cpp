@@ -87,7 +87,7 @@ public:
 					m_world->DrawShape(f, xf, b2Color(0.9f, 0.7f, 0.7f));
 				}
 			}
-			auto& bodyAABB = item->second->GetBodyAABB(PointType::BODY_TYPE);
+			auto& bodyAABB = item->second->GetBodyAABB();
 			b2Vec2 vs[4];
 			vs[0].Set(bodyAABB.lowerBound.x, bodyAABB.lowerBound.y);
 			vs[1].Set(bodyAABB.upperBound.x, bodyAABB.lowerBound.y);

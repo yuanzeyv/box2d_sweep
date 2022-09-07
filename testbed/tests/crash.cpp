@@ -95,13 +95,16 @@ public:
 			vs[3].Set(bodyAABB.lowerBound.x, bodyAABB.upperBound.y);
 			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 0.1f, 0.1f)); 
 		} 
-	}
+	} 
 	TimeWheelManager& m_TimeWheelManager; 
 	virtual void DebugDraw(b2World* world,float step)
 	{ 
 		Lua.LuaState["Tick"](step);//tick完成之后，进行距离计算
-		NavmeshManager::Instance().Update(step); 
+		NavmeshManager::Instance().Update(step);
+		auto t1 = std::chrono::high_resolution_clock::now();
 		m_TimeWheelManager.Update(step);  
+		auto t2 = std::chrono::high_resolution_clock::now();
+		printf("%lld  , 当前消耗的时间\n\r",(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()));
 
 		AxisDistanceManager::Instance().Update();
 		if (Player) {

@@ -10,8 +10,8 @@
 //bit 50-64 剩余类型
 //bit 48-49 区域ID
 //bit 00-47  角色ID
-#define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((type & 3) << 47)) //生成最大最小点类型
-#define GET_ACTOR_ID(actorID) (actorID & (~((ActorID)(0xffff) << 47)))//获取到当前的角色ID
+#define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((ActorID)type) << 48) //生成最大最小点类型
+#define GET_ACTOR_ID(actorID) (actorID & (~0xFFFF000000000000))//获取到当前的角色ID
 enum PointPosType {//要不要应该都可以
 	POS_BODY_LIMIT_LEFT_MAX = 0,//左上
 	POS_BODY_LIMIT_LEFT_MIN = 1,//左下 
@@ -71,6 +71,7 @@ public:
 	const std::unordered_map<ActorID, ViewRange*>& GetBeObseverView(ViewRange* actor);//某一个角色进入到了被观察的视图
 	const b2AABB& GetBodyAABB() const;//获取到当前角色的刚体AABB   
 	const b2AABB& GetViewAABB() const;//获取到当前角色的刚体AABB 
+	const b2AABB& GetAABB(PointType type) const;//获取到当前角色的刚体AABB 
 
 	bool EnterView(ViewRange* actor);//某一个角色进入视野 
 	void LeaveView(ActorID actorID); //某一个角色离开了视图 
@@ -85,6 +86,7 @@ public:
 
 	void RecalcBodyAABB();//重新计算视口 
 	void RecalcViewAABB();//重新计算视口
+	void RecalcAABB(PointType type);//重新计算视口
 	void RecalcRefreshCondtion();//重计算刷新条件    
 	~ViewRange() {}
 private:
@@ -95,9 +97,7 @@ private:
 	std::unordered_map<ActorID, ViewRange*> m_BeObserverMap;//用于记录每个角色被谁观察到 
 	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 
-	b2AABB m_BodyAABB;//记录角色上一次添加时的AABB    
-	b2AABB m_ViewAABB;//记录角色上一次添加时的AABB      
-
+	b2AABB m_AABB[PointType::MAX_POINT_TYPE];//记录角色上一次添加时的AABB      
 	b2Vec2 m_OffsetCondtion;//偏移极限 
 }; 
 
@@ -110,8 +110,8 @@ public:
 	void UnregisterBody(BodyData* actor);//反注册
 	//计算区域 
 	void AddDelayCalcTable(ActorID id);//添加一个刚体计算对象 
-	void AdditionViewAABB(ViewRange* actoViewRange);//添加一个视图AABB
-	void RemoveViewAABB(ViewRange* actoViewRange); 
+	void AdditionAABB(PointType type,ViewRange* actoViewRange);//添加一个视图AABB
+	void RemoveAABB(PointType type,ViewRange* actoViewRange);
 	//获取到单元
 	ViewRange* GetViewRange(ActorID actorID);
 	//重计算
@@ -128,9 +128,9 @@ private:
 	//内存分配对象 
 	AutomaticGenerator<SmartActorIDMan> m_ViewCellIdleGenerate;//自动的生成视图对象管理的对象 
 	//当前所有的距离对象
-	ViewRangeRecordMap m_AxisBodyMap;//其中有X坐标列和Y坐标列 
+	ViewRangeRecordMap m_AxisBodyMap[PointType::MAX_POINT_TYPE];//其中有X坐标列和Y坐标列 
 	std::unordered_map<ActorID, ViewRange*> m_ViewObjMap;//角色对应的范围信息 
-	std::unordered_set<ActorID> m_DelayCalcMoveList;//角色对应的范围信息
+	std::unordered_map<ActorID, ViewRange*> m_DelayCalcMoveList;//角色对应的范围信息
 }; 
 
 inline void ViewRange::ClearObserverTable() //清理当前观察到的所有角色
@@ -152,24 +152,31 @@ inline void ViewRange::LeaveView(ActorID actorID) //某一个角色离开了视图
 }
 inline const b2AABB& ViewRange::GetBodyAABB() const//获取到当前角色的刚体AABB 
 {
-	return m_BodyAABB;//获取到某一类型的AABB盒子
+	return m_AABB[PointType::BODY_TYPE];
 }
 inline const b2AABB& ViewRange::GetViewAABB() const//获取到当前角色的刚体AABB 
 {
-	return m_ViewAABB;//获取到某一类型的AABB盒子
+	return m_AABB[PointType::VIEW_TYPE];//获取到某一类型的AABB盒子
 }
 
 inline void ViewRange::RecalcViewAABB()//重新计算视口
 {
-	m_ViewAABB.lowerBound.Set(m_BodyPos.x - m_ObserverRange.x, m_BodyPos.y - m_ObserverRange.x);//重新计算视图
-	m_ViewAABB.upperBound.Set(m_BodyPos.x + m_ObserverRange.y, m_BodyPos.y + m_ObserverRange.y);
+	m_AABB[PointType::VIEW_TYPE].lowerBound.Set(m_BodyPos.x - m_ObserverRange.x, m_BodyPos.y - m_ObserverRange.x);//重新计算视图
+	m_AABB[PointType::VIEW_TYPE].upperBound.Set(m_BodyPos.x + m_ObserverRange.y, m_BodyPos.y + m_ObserverRange.y);
 }
 inline void ViewRange::RecalcBodyAABB()//重新计算视口
 {
 	this->m_Actor->CalcBodyAABB();
 	const b2AABB& bodyAABB = m_Actor->GetAABB();//获取到角色的AABB
-	memcpy(&m_BodyAABB, &bodyAABB, sizeof(b2AABB));//拷贝数据
+	memcpy(&m_AABB[PointType::BODY_TYPE], &bodyAABB, sizeof(b2AABB));//拷贝数据
 	RecalcRefreshCondtion(); 
+}
+inline void ViewRange::RecalcAABB(PointType type)//重新计算视口
+{
+	if (type == PointType::BODY_TYPE)
+		RecalcBodyAABB();
+	else if (type == PointType::VIEW_TYPE)
+		RecalcViewAABB();
 }
 
 inline void ViewRange::RecalcBodyPosition()
@@ -178,7 +185,7 @@ inline void ViewRange::RecalcBodyPosition()
 }
 inline void ViewRange::RecalcRefreshCondtion()//重计算刷新条件
 {	//角色移动了相对于角色当前百分之10的位置的话
-	m_OffsetCondtion = m_BodyAABB.upperBound - m_BodyAABB.lowerBound; 
+	m_OffsetCondtion = m_AABB[PointType::BODY_TYPE].upperBound - m_AABB[PointType::BODY_TYPE].lowerBound;
 	m_OffsetCondtion *= 0.1;
 }
 inline BodyData* ViewRange::GetActor() {//获取到当前的角色
@@ -186,11 +193,15 @@ inline BodyData* ViewRange::GetActor() {//获取到当前的角色
 }
 
 inline bool ViewRange::InObserverContain(ViewRange* actor) {//移动的角色询问当前是否还在监听范围内 
-	if (!b2TestOverlap(m_ViewAABB, actor->m_BodyAABB)) {//如果当前看得观察到了这个刚体,但现在看不见了
+	if (!b2TestOverlap(m_AABB[PointType::VIEW_TYPE], actor->GetBodyAABB())) {//如果当前看得观察到了这个刚体,但现在看不见了
 		m_ObserverMap.erase(actor->m_Actor->ID());//执行删除
 		return false;
 	}
 	return true;//删除自己
+}
+inline const b2AABB& ViewRange::GetAABB(PointType type) const//获取到当前角色的刚体AABB 
+{
+	return m_AABB[type];
 }
 inline int ViewRange::IsRefreshActorView()//计算视差,大于多少才会重计算
 {
@@ -225,8 +236,12 @@ inline const std::unordered_map<ActorID, ViewRange*>& ViewRange::GetBeObseverVie
 	return m_BeObserverMap;
 }
 
-inline void AxisDistanceManager::AddDelayCalcTable(ActorID id) {
-	m_DelayCalcMoveList.insert(id);//这个角色将再下一帧被重计算
+inline void AxisDistanceManager::AddDelayCalcTable(ActorID id) { 
+	if (m_DelayCalcMoveList.count(id))
+		return;
+	if (m_ViewObjMap.count(id) == 0)
+		return; 
+	m_DelayCalcMoveList[id] = m_ViewObjMap[id];//这个角色将再下一帧被重计算
 }
 inline bool AxisDistanceManager::RegisterBody(BodyData* actor) {
 	ActorID actorID = actor->ID();
@@ -240,7 +255,8 @@ inline void AxisDistanceManager::UnregisterBody(ActorID id)
 {
 	if (!m_ViewObjMap.count(id)) return;//未注册过
 	ViewRange* rangeObj = m_ViewObjMap[id];//获取到对象 
-	RemoveViewAABB( rangeObj);
+	RemoveAABB(PointType::BODY_TYPE,rangeObj);
+	RemoveAABB(PointType::BODY_TYPE, rangeObj);
 	delete rangeObj;
 	m_ViewObjMap.erase(id);
 }

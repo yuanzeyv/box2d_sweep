@@ -27,36 +27,28 @@ void BodyData::InitBodyAABB()
 	//最后再减去当前角色的位置
 	BodyRange.lowerBound -= Body->GetPosition();
 	BodyRange.upperBound -= Body->GetPosition();
-}
-
+}  
 void BodyData::CalcBodyAABB()
-{
-	//重新计算位置,重新计算旋转 
-	memcpy(&BodyAABB, &BodyRange, sizeof(b2AABB));
-	// 重新计算角度便宜
+{  
 	float radians = Body->GetAngle();
-	double sinVal = sin(radians);
-	double cosVal = cos(radians);
-	double cosLowX = BodyAABB.lowerBound.x * cosVal;
-	double sinLowX = BodyAABB.lowerBound.x * sinVal;
-	double cosLowY = BodyAABB.lowerBound.y * cosVal;
-	double sinLowY = BodyAABB.lowerBound.y * sinVal;
-	double cosUpX = BodyAABB.upperBound.x * cosVal;
-	double sinUpX = BodyAABB.upperBound.x * sinVal;
-	double cosUpY = BodyAABB.upperBound.y * cosVal;
-	double sinUpY = BodyAABB.upperBound.y * sinVal;
-
+	float sinVal = sin(radians);
+	float cosVal = cos(radians);
+	float cosLowX = BodyRange.lowerBound.x * cosVal;
+	float sinLowX = BodyRange.lowerBound.x * sinVal;
+	float cosLowY = BodyRange.lowerBound.y * cosVal;
+	float sinLowY = BodyRange.lowerBound.y * sinVal;
+	float cosUpX = BodyRange.upperBound.x * cosVal;
+	float sinUpX = BodyRange.upperBound.x * sinVal;
+	float cosUpY = BodyRange.upperBound.y * cosVal;
+	float sinUpY = BodyRange.upperBound.y * sinVal;
 	//这是旋转后的包围盒
 	b2Vec2 point[4];
 	point[0].x = cosLowX - sinLowY;
 	point[0].y = cosLowY + sinLowX;
-
 	point[1].x = cosLowX - sinUpY;
 	point[1].y = cosUpY + sinLowX;
-
 	point[2].x = cosUpX - sinUpY;
 	point[2].y = cosUpY + sinUpX;
-
 	point[3].x = cosUpX - sinLowY;  
 	point[3].y = cosLowY + sinUpX;
 
@@ -64,9 +56,7 @@ void BodyData::CalcBodyAABB()
 	BodyAABB.lowerBound.y = 99999;
 	BodyAABB.upperBound.x = -99999;
 	BodyAABB.upperBound.y = -99999;
-
-	for (int i = 0; i < 4; i++)
-	{
+	for (int i = 0; i < 4; i++) {//循环16次 
 		if (point[i].x > BodyAABB.upperBound.x)
 			BodyAABB.upperBound.x = point[i].x;
 		if (point[i].y > BodyAABB.upperBound.y)

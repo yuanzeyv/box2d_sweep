@@ -10,7 +10,7 @@ public:
 		for (auto item = m_IdleList.begin(); item != m_IdleList.end(); item++)	delete* item;
 		m_IdleList.erase(m_IdleList.begin(), m_IdleList.end()); //全部清理
 	}
-	ListType* RequireObj() {
+	inline ListType* RequireObj() {
 		if (m_IdleList.size() == 0)//列表空了的话
 			GenerateIdelListTypes();//1000个角色  
 		auto beginObj = m_IdleList.begin();//获取到第一个
@@ -18,7 +18,7 @@ public:
 		m_IdleList.erase(beginObj);//删除第一个
 		return listTypeObj;
 	}
-	void BackObj(ListType* obj) {//归还一个指针
+	inline void BackObj(ListType* obj) {//归还一个指针
 		m_IdleList.push_back(obj);
 	}
 private:

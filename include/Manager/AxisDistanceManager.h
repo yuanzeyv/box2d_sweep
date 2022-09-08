@@ -4,6 +4,7 @@
 #include <list>     
 #include <unordered_map>
 #include <unordered_set>
+#include <chrono>
 #include <typeinfo>
 #include "Define.h" 
 #include "TemplateBoard.h"  
@@ -36,24 +37,22 @@ struct CompareFloat {
 class SmartActorIDMan {
 public:
 	inline void Insert(ActorID actorID, PointPosType type)
-	{
-		actorID = GEN_AABB_POINT_TYPE(actorID, type);//生成一个新的
-		m_ActorSet.insert(actorID);
+	{ 
+		m_ActorSet.insert(GEN_AABB_POINT_TYPE(actorID, type));
 	}
 	inline void Erease(ActorID actorID, PointPosType type)
-	{
-		actorID = GEN_AABB_POINT_TYPE(actorID, type);//生成一个新的
-		m_ActorSet.erase(actorID);
+	{ 
+		m_ActorSet.erase(GEN_AABB_POINT_TYPE(actorID, type));
 	}
 	inline const std::unordered_set<ActorID>& GetTable() {
-		return  m_ActorSet;
+		return m_ActorSet;
 		
 	}
 	inline void Init() {
 		m_ActorSet.clear();
 	}
 	inline bool IsInValid() { 
-		return m_ActorSet.size() == 0;
+		return !m_ActorSet.size();
 	}
 private: 
 	std::unordered_set<ActorID> m_ActorSet;//记录一组无序的角色ID
@@ -130,7 +129,9 @@ private:
 	//当前所有的距离对象
 	ViewRangeRecordMap m_AxisBodyMap[PointType::MAX_POINT_TYPE];//其中有X坐标列和Y坐标列 
 	std::unordered_map<ActorID, ViewRange*> m_ViewObjMap;//角色对应的范围信息 
+
 	std::unordered_map<ActorID, ViewRange*> m_DelayCalcMoveList;//角色对应的范围信息
+	std::unordered_map<ActorID, ViewRange*> m_CalcMoveList;//应该被计算的列表
 }; 
 
 inline void ViewRange::ClearObserverTable() //清理当前观察到的所有角色
@@ -165,10 +166,9 @@ inline void ViewRange::RecalcViewAABB()//重新计算视口
 	m_AABB[PointType::VIEW_TYPE].upperBound.Set(m_BodyPos.x + m_ObserverRange.y, m_BodyPos.y + m_ObserverRange.y);
 }
 inline void ViewRange::RecalcBodyAABB()//重新计算视口
-{
-	this->m_Actor->CalcBodyAABB();
-	const b2AABB& bodyAABB = m_Actor->GetAABB();//获取到角色的AABB
-	memcpy(&m_AABB[PointType::BODY_TYPE], &bodyAABB, sizeof(b2AABB));//拷贝数据
+{ 
+	m_Actor->CalcBodyAABB(); 
+	memcpy(&m_AABB[PointType::BODY_TYPE], &m_Actor->GetAABB(), sizeof(b2AABB));//拷贝数据
 	RecalcRefreshCondtion(); 
 }
 inline void ViewRange::RecalcAABB(PointType type)//重新计算视口
@@ -185,8 +185,8 @@ inline void ViewRange::RecalcBodyPosition()
 }
 inline void ViewRange::RecalcRefreshCondtion()//重计算刷新条件
 {	//角色移动了相对于角色当前百分之10的位置的话
-	m_OffsetCondtion = m_AABB[PointType::BODY_TYPE].upperBound - m_AABB[PointType::BODY_TYPE].lowerBound;
-	m_OffsetCondtion *= 0.1;
+	m_OffsetCondtion.x = (m_AABB[PointType::BODY_TYPE].upperBound.x - m_AABB[PointType::BODY_TYPE].lowerBound.x) * 0.2f;
+	m_OffsetCondtion.y = (m_AABB[PointType::BODY_TYPE].upperBound.y - m_AABB[PointType::BODY_TYPE].lowerBound.y) * 0.2f;
 }
 inline BodyData* ViewRange::GetActor() {//获取到当前的角色
 	return m_Actor;
@@ -268,8 +268,18 @@ inline void AxisDistanceManager::UnregisterBody(BodyData* actor)
 }
 //重新计算角色距离
 inline void AxisDistanceManager::Update() {
+	int64_t moveCost;
+	int64_t calcCost;
+	auto t1 = std::chrono::high_resolution_clock::now();
 	ActorsMove();//更新所有角色的视距,包括碰撞AABB  
+	auto t2 = std::chrono::high_resolution_clock::now();
+	moveCost = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << "待计算的单位有:" << m_CalcMoveList.size() << std::endl;
+	t1 = std::chrono::high_resolution_clock::now();
 	CalcViewObj();//计算角色可以观察到的视图对象  
+	t2 = std::chrono::high_resolution_clock::now();
+	calcCost = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count(); 
+	std::cout << "移动耗时" << moveCost << " 计算耗时:" << calcCost << "总耗时:" << moveCost + calcCost << std::endl;
 }
   
 inline AxisDistanceManager& AxisDistanceManager::Instance() {

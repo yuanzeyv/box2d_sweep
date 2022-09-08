@@ -93,20 +93,24 @@ public:
 			vs[1].Set(bodyAABB.upperBound.x, bodyAABB.lowerBound.y);
 			vs[2].Set(bodyAABB.upperBound.x, bodyAABB.upperBound.y);
 			vs[3].Set(bodyAABB.lowerBound.x, bodyAABB.upperBound.y);
-			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 0.1f, 0.1f)); 
-		} 
+			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 0.1f, 0.1f));
+			auto& viewAABB = item->second->GetViewAABB(); 
+			vs[0].Set(viewAABB.lowerBound.x, viewAABB.lowerBound.y);
+			vs[1].Set(viewAABB.upperBound.x, viewAABB.lowerBound.y);
+			vs[2].Set(viewAABB.upperBound.x, viewAABB.upperBound.y);
+			vs[3].Set(viewAABB.lowerBound.x, viewAABB.upperBound.y);
+			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 1.0f, 0.1f));
+		}   
 	} 
 	TimeWheelManager& m_TimeWheelManager; 
 	virtual void DebugDraw(b2World* world,float step)
 	{ 
 		Lua.LuaState["Tick"](step);//tick完成之后，进行距离计算
-		NavmeshManager::Instance().Update(step);
-		auto t1 = std::chrono::high_resolution_clock::now();
-		m_TimeWheelManager.Update(step);  
-		auto t2 = std::chrono::high_resolution_clock::now();
-		printf("%lld  , 当前消耗的时间\n\r",(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()));
+		NavmeshManager::Instance().Update(step); 
+		m_TimeWheelManager.Update(step);   
 
 		AxisDistanceManager::Instance().Update();
+
 		if (Player) {
 			DrawShape(Player); 
 			playerID = Player->ID();

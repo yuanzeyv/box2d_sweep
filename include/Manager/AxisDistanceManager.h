@@ -1,63 +1,55 @@
 #pragma once
 #include "Manager/Base/BodyData.h" 
 #include <map>
-#include <list>     
+#include <list>      
 #include <unordered_map>
 #include <unordered_set>
 #include <chrono>
 #include <typeinfo>
+#include <algorithm>
 #include "Define.h" 
-#include "TemplateBoard.h"  
+#include "TemplateBoard.h" 
 //bit 50-64 剩余类型
 //bit 48-49 区域ID
 //bit 00-47  角色ID
 #define GEN_AABB_POINT_TYPE(actorID,type) ((actorID) | ((ActorID)type) << 48) //生成最大最小点类型
-#define GET_ACTOR_ID(actorID) (actorID & (~0xFFFF000000000000))//获取到当前的角色ID
-enum PointPosType {//要不要应该都可以
-	POS_BODY_LIMIT_LEFT_MAX = 0,//左上
-	POS_BODY_LIMIT_LEFT_MIN = 1,//左下 
-	POS_BODY_LIMIT_RIGHT_MAX = 2,//右上 
-	POS_BODY_LIMIT_RIGHT_MIN = 3,//右下 
-	POS_BODY_LIMIT_NUM_MAX = 4,//最大个数
-}; 
+#define GET_ACTOR_ID(actorID) (actorID & (~0xFFFF000000000000))//获取到当前的角色ID 
 enum PointType {
 	BODY_TYPE = 0,
 	VIEW_TYPE = 1,
 	MAX_POINT_TYPE = 2,
 };
-struct CompareFloat {
+enum AxisType {
+	X_AXIS = 0,
+	Y_AXIS = 1,
+	MAX_AXIS_TYPE ,
+};  
+class OrderlyB2Vec2Array{//以X轴 Y轴做排序
+public:
 	bool operator()(const b2Vec2& k1, const b2Vec2& k2) const {
-		if (k1.x < k2.x)
-			return true;
-		if (k1.x > k2.x)
-			return false;
+		if (k1.x != k2.x)
+			return k1.x < k2.x; 
 		return k1.y < k2.y;
 	}
-}; 
-class SmartActorIDMan {
-public:
-	inline void Insert(ActorID actorID, PointPosType type)
-	{ 
-		m_ActorSet.insert(GEN_AABB_POINT_TYPE(actorID, type));
+	inline bool IsExist(ActorID actorID)
+	{
+		std::vector<ActorID>::iterator itor = lower_bound(m_ActorArr.begin(), m_ActorArr.end(), actorID);//首先找到当前元素
+		return *itor == actorID;//是否已经存在了
 	}
-	inline void Erease(ActorID actorID, PointPosType type)
-	{ 
-		m_ActorSet.erase(GEN_AABB_POINT_TYPE(actorID, type));
+	inline bool Insert(ActorID actorID) { 
+		std::vector<ActorID>::iterator itor = lower_bound(m_ActorArr.begin(), m_ActorArr.end(), actorID);//首先找到当前元素
+		m_ActorArr.insert(itor,actorID);//在指定位置插入
+	} 
+	//不处理重复
+	bool Merge(std::vector<ActorID>& actorArr) {
+		//首先使用二分查找,找到第一个最近的位置,然后从当前位置开始插入
+		lower_bound()
+		merge()
 	}
-	inline const std::unordered_set<ActorID>& GetTable() {
-		return m_ActorSet;
-		
-	}
-	inline void Init() {
-		m_ActorSet.clear();
-	}
-	inline bool IsInValid() { 
-		return !m_ActorSet.size();
-	}
-private: 
-	std::unordered_set<ActorID> m_ActorSet;//记录一组无序的角色ID
-};
-typedef std::map<b2Vec2, SmartActorIDMan*, CompareFloat > ViewRangeRecordMap;//视图轴
+private:
+	std::vector<ActorID> m_ActorArr;
+};  
+typedef std::map<b2Vec2, std::vector<ActorID>, OrderlyB2Vec2Array > ViewRangeRecordMap;//某一个点位中,包含了某一组角色数据
 
 //当前的视图范围
 class ViewRange{
@@ -87,13 +79,19 @@ public:
 	void RecalcViewAABB();//重新计算视口
 	void RecalcAABB(PointType type);//重新计算视口
 	void RecalcRefreshCondtion();//重计算刷新条件    
+
+	void GetObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//寻找自己视口的某一个对象
+	void GetBeObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//寻找自己视口的某一个对象
+
+	static bool Compare(ViewRange*& v1, ViewRange*& v2);
 	~ViewRange() {}
 private:
 	BodyData* m_Actor;//当前的角色 
 	b2Vec2 m_BodyPos;//上一次的角色位置
 
-	std::unordered_map<ActorID, ViewRange*> m_ObserverMap;//可以看到的角色列表  
-	std::unordered_map<ActorID, ViewRange*> m_BeObserverMap;//用于记录每个角色被谁观察到 
+	//存储了一组有序的,以角色下表为排序的数据  
+	std::vector<ViewRange*> m_ObserverMap;
+	std::vector<ViewRange*> m_BeObserverMap;
 	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 
 	b2AABB m_AABB[PointType::MAX_POINT_TYPE];//记录角色上一次添加时的AABB      
@@ -127,28 +125,42 @@ private:
 	//内存分配对象 
 	AutomaticGenerator<SmartActorIDMan> m_ViewCellIdleGenerate;//自动的生成视图对象管理的对象 
 	//当前所有的距离对象
-	ViewRangeRecordMap m_AxisBodyMap[PointType::MAX_POINT_TYPE];//其中有X坐标列和Y坐标列 
+	ViewRangeRecordMap m_AxisBodyMap[PointType::MAX_POINT_TYPE][AxisType::MAX_AXIS_TYPE];//其中有X坐标列和Y坐标列  
 	std::unordered_map<ActorID, ViewRange*> m_ViewObjMap;//角色对应的范围信息 
 
 	std::unordered_map<ActorID, ViewRange*> m_DelayCalcMoveList;//角色对应的范围信息
 	std::unordered_map<ActorID, ViewRange*> m_CalcMoveList;//应该被计算的列表
-}; 
+};
+bool ViewRange::Compare(ViewRange*& v1, ViewRange*& v2) {
+	return v1->GetActor()->ID() < v2->GetActor()->ID();//ID从小到大排序
+}
+inline void ViewRange::GetObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor) {//寻找自己视口的某一个对象
+	auto iterEnd = m_ObserverMap.end();
+	itor = std::lower_bound(m_ObserverMap.begin(), iterEnd, actor, ViewRange::Compare);
+	if (itor == iterEnd || (*itor)->GetActor()->ID() != actor->GetActor()->ID())
+		itor = iterEnd;
+}
+inline void ViewRange::GetBeObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor) {//寻找自己视口的某一个对象
+	auto iterEnd = m_ObserverMap.end();
+	itor = std::lower_bound(m_ObserverMap.begin(), iterEnd, actor, ViewRange::Compare); 
+	if (itor == iterEnd || (*itor) == actor)
+		itor = iterEnd;
+}
 
-inline void ViewRange::ClearObserverTable() //清理当前观察到的所有角色
-{  
+inline void ViewRange::ClearObserverTable() {  //清理当前观察到的所有角色
 	m_ObserverMap.clear();
 }
 
-inline const b2Vec2& ViewRange::GetViewRange() //获取到当前的视图范围
-{
+inline const b2Vec2& ViewRange::GetViewRange() { //获取到当前的视图范围
 	return m_ObserverRange;
 }
-inline const b2Vec2& ViewRange::GetBodyPos()//获取到当前玩家的点位
-{
+inline const b2Vec2& ViewRange::GetBodyPos() {//获取到当前玩家的点位
+
 	return m_BodyPos;
 }
 inline void ViewRange::LeaveView(ActorID actorID) //某一个角色离开了视图
-{
+{ 
+
 	m_ObserverMap.erase(actorID);
 }
 inline const b2AABB& ViewRange::GetBodyAABB() const//获取到当前角色的刚体AABB 

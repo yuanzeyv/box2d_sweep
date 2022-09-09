@@ -27,7 +27,7 @@ void AxisDistanceManager::ActorsMove()
 		actorView = item->second;
 		if (actorView->IsRefreshActorView() == 0) {//移动距离过浅
 			continue;
-		} 
+		}
 		actorView->RecalcBodyPosition();//重计算角色的位置  
 		RemoveAABB(PointType::BODY_TYPE, actorView);
 		RemoveAABB(PointType::VIEW_TYPE, actorView); 
@@ -41,45 +41,44 @@ void AxisDistanceManager::ActorsMove()
 }
 
 
+
 void AxisDistanceManager::AdditionAABB(PointType type, ViewRange* actoViewRange)
 {
 	const b2AABB& viewAABB = actoViewRange->GetAABB(type);//获取到对应类型的AABB
-	b2Vec2* posPoint[PointPosType::POS_BODY_LIMIT_NUM_MAX] = {
-		&b2Vec2(viewAABB.lowerBound.x, viewAABB.upperBound.y),//POS_BODY_LIMIT_LEFT_MAX
-		&b2Vec2(viewAABB.lowerBound.x, viewAABB.lowerBound.y),//POS_BODY_LIMIT_LEFT_MIN
-		&b2Vec2(viewAABB.upperBound.x, viewAABB.upperBound.y),//POS_BODY_LIMIT_RIGHT_MAX
-		&b2Vec2(viewAABB.upperBound.x, viewAABB.lowerBound.y) }; //POS_BODY_LIMIT_RIGHT_MIN  
-	ActorID actorID = actoViewRange->GetActor()->ID();
-	ViewRangeRecordMap& axisCell = m_AxisBodyMap[type];
+	b2Vec2 leftMax(viewAABB.lowerBound.x, viewAABB.upperBound.y);//POS_BODY_LIMIT_LEFT_MAX
+	b2Vec2 leftMin(viewAABB.lowerBound.x, viewAABB.lowerBound.y);//POS_BODY_LIMIT_LEFT_MIN
+	b2Vec2 rightMax(viewAABB.upperBound.x, viewAABB.upperBound.y);//POS_BODY_LIMIT_RIGHT_MAX
+	b2Vec2 rightMin(viewAABB.upperBound.x, viewAABB.lowerBound.y); //POS_BODY_LIMIT_RIGHT_MIN  
+	b2Vec2* posPoint[PointPosType::POS_BODY_LIMIT_NUM_MAX] = { &leftMax,&leftMin,&rightMax,&rightMin };
 	for (int i = 0; i < PointPosType::POS_BODY_LIMIT_NUM_MAX; i++) {
-		b2Vec2& pos = *posPoint[i];
-		if (!axisCell.count(pos)) {
-			axisCell[pos] = m_ViewCellIdleGenerate.RequireObj();
+		if (!m_AxisBodyMap[type].count(*posPoint[i])) {
+			m_AxisBodyMap[type][*posPoint[i]] = m_ViewCellIdleGenerate.RequireObj();
 		}
-		axisCell[pos]->Insert(actorID, (PointPosType)i);
-	} 
+		m_AxisBodyMap[type][*posPoint[i]]->Insert(actoViewRange->GetActor()->ID(), (PointPosType)i);
+	}
 }
 void AxisDistanceManager::RemoveAABB(PointType type, ViewRange* actoViewRange)
 {
 	const b2AABB& viewAABB = actoViewRange->GetAABB(type);//获取到对应类型的AABB
-	b2Vec2* posPoint[PointPosType::POS_BODY_LIMIT_NUM_MAX] = {
-		&b2Vec2(viewAABB.lowerBound.x, viewAABB.upperBound.y),//POS_BODY_LIMIT_LEFT_MAX
-		&b2Vec2(viewAABB.lowerBound.x, viewAABB.lowerBound.y),//POS_BODY_LIMIT_LEFT_MIN
-		&b2Vec2(viewAABB.upperBound.x, viewAABB.upperBound.y),//POS_BODY_LIMIT_RIGHT_MAX
-		&b2Vec2(viewAABB.upperBound.x, viewAABB.lowerBound.y) };//POS_BODY_LIMIT_RIGHT_MIN 
+	b2Vec2 leftMax(viewAABB.lowerBound.x, viewAABB.upperBound.y);//POS_BODY_LIMIT_LEFT_MAX
+	b2Vec2 leftMin(viewAABB.lowerBound.x, viewAABB.lowerBound.y);//POS_BODY_LIMIT_LEFT_MIN
+	b2Vec2 rightMax(viewAABB.upperBound.x, viewAABB.upperBound.y);//POS_BODY_LIMIT_RIGHT_MAX
+	b2Vec2 rightMin(viewAABB.upperBound.x, viewAABB.lowerBound.y); //POS_BODY_LIMIT_RIGHT_MIN  
+	b2Vec2* posPoint[PointPosType::POS_BODY_LIMIT_NUM_MAX] = { &leftMax,&leftMin,&rightMax,&rightMin };
 	ViewRangeRecordMap& axisCell = m_AxisBodyMap[type];
 	ActorID actorID = actoViewRange->GetActor()->ID();
 	for (int i = 0; i < PointPosType::POS_BODY_LIMIT_NUM_MAX; i++) {
 		b2Vec2& pos = *posPoint[i];
-		if (!axisCell.count(pos))//首先判断对应类型是否有当前信息
+		if (!axisCell.count(*posPoint[i]))//首先判断对应类型是否有当前信息
 			continue;
-		axisCell[pos]->Erease(actorID, (PointPosType)i);//删除这个单元
-		if (axisCell[pos]->IsInValid()) {
-			m_ViewCellIdleGenerate.BackObj(axisCell[pos]);
-			axisCell.erase(pos);
+		axisCell[*posPoint[i]]->Erease(actorID, (PointPosType)i);//删除这个单元
+		if (axisCell[*posPoint[i]]->IsInValid()) {
+			m_ViewCellIdleGenerate.BackObj(axisCell[*posPoint[i]]);
+			axisCell.erase(*posPoint[i]);
 		}
 	}
 }
+
 extern ActorID playerID;
 //寻找某一个轴的某一范围内的所有单元信息  
 void AxisDistanceManager::InquiryAxisPoints(unordered_set<ActorID>& outData,const b2AABB& viewAABB)//偏移单元代表当前要查询的息(必须确保当前被查询点存在于表内)

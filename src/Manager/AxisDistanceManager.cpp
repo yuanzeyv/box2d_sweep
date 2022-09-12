@@ -27,7 +27,6 @@ void AxisDistanceManager::ActorsMove()
 	}  
 	m_DelayCalcMoveList.clear(); 
 }
-  
 //寻找某一个轴的某一范围内的所有单元信息  
 void AxisDistanceManager::InquiryAxisPoints(unordered_set<ActorID>& outData,const b2AABB& viewAABB)//偏移单元代表当前要查询的息(必须确保当前被查询点存在于表内)
 {  

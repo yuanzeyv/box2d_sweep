@@ -1,4 +1,8 @@
 #pragma once
+#define MAX_ACTOR_COUNT 1000 //地图中最大刚体的数量 
+#define MAX_NON_ACTOR_COUNT 5000 //地图中最大非角色的数量 
+#define MAX_BVODY_COUNT ((MAX_ACTOR_COUNT) +( MAX_NON_ACTOR_COUNT))//地图中的最大玩家数量
+
 #define MAX_DISTANCE 99999 //地图最大距离,
 //地图比例尺
 #define PlottingScale (0.1f)						 //比例尺, 0.1米 = 1米

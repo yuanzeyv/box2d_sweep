@@ -1,20 +1,21 @@
 #pragma once
 #include "Manager/Base/BodyData.h" 
 #include <map>
-#include <list>     
+#include <list>      
 #include <unordered_map>
 #include <unordered_set>
 #include <chrono> 
 #include <set>
 #include <algorithm>
 #include <typeinfo>
-#include "Define.h" 
-#include "TemplateBoard.h"   
+#include <algorithm>
+#include "Define.h"  
+#include "TemplateBoard.h"  
 enum PointType {
 	BODY_TYPE = 0,//刚体类型
 	VIEW_TYPE = 1,//视图类型
 	MAX_POINT_TYPE = 2,
-};
+}; 
 enum PointAxisType {
 	LEFT_BUTTOM = 0,
 	RIGHT_TOP   = 1,
@@ -114,7 +115,7 @@ public:
 			std::inplace_merge(bestItor, outData.begin() + (*item)->m_ActorsSet.size(), outData.end()); 
 		}
 	}                                                                                                                                                                                    
-};
+}; 
 
 class ViewRange{
 public:
@@ -140,12 +141,18 @@ public:
 	void RecalcAABB(PointType type);//重新计算视口
 
 	void RecalcRefreshCondtion();//重计算刷新条件    
+
+	void GetObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//寻找自己视口的某一个对象
+	void GetBeObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//寻找自己视口的某一个对象
+
+	static bool Compare(ViewRange*& v1, ViewRange*& v2);
 	~ViewRange() {}
 private:
 	BodyData* m_Actor;//当前的角色 
 	b2Vec2 m_BodyPos;//上一次的角色位置
 
-	std::vector<ActorID> m_ObserverArr;//可以看到的角色列表   
+	std::vector<ActorID> m_ObserverArr;//可以看到的角色列表    
+
 	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 
 	b2AABB m_AABB[PointType::MAX_POINT_TYPE];//记录角色上一次添加时的AABB      
@@ -188,12 +195,12 @@ inline void ViewRange::RefreshObserver(std::vector<ActorID>& actorArr)
 	AxisDistanceManager& manager = AxisDistanceManager::Instance();  
 } 
 inline const b2Vec2& ViewRange::GetViewRange() //获取到当前的视图范围
-{
+{ 
 	return m_ObserverRange;
 }
-inline const b2Vec2& ViewRange::GetBodyPos()//获取到当前玩家的点位
-{
-	return m_BodyPos;
+inline const b2Vec2& ViewRange::GetBodyPos() {//获取到当前玩家的点位
+
+	return m_BodyPos; 
 } 
 inline b2AABB& ViewRange::GetBodyAABB() const//获取到当前角色的刚体AABB 
 {

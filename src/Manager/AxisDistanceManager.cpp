@@ -1,4 +1,5 @@
 #include "Manager/AxisDistanceManager.h" 
+#include<queue>
 using namespace std;    
 ViewRange::ViewRange(BodyData* bodyData, b2Vec2 range) :
 	m_ObserverRange(range),
@@ -35,7 +36,7 @@ bool AxisMap::AddtionViewRange(ViewRange* actor, b2AABB& aabb)
 		}
 		auto jumpList = m_AxisActors[i][point[i]];
 		if (!skiplist_search(jumpList, actorId)){
-			skiplist_insert(jumpList, actorId,(int)actor);
+			skiplist_insert(jumpList, actorId,(int64_t)actor);
 		} 
 	}
 	return true;
@@ -85,11 +86,59 @@ void AxisMap::ReadyInitActorData()
 		for (auto actorSet = actorMap.begin(); actorSet != actorMap.end(); actorSet++) {
 			actorData[index]->m_Position.Set(*actorSet->first);
 			actorData[index]->m_SkipList = actorSet->second;
+			index++;
 		}
 	}
-}
+}//多个有序数组排序
+struct node {
+	sk_link* m_Point;  //  元素值
+	ViewRange* m_ViewRange;  //  元素值
+	int k;   //元素所在数组
+	int i;  // 元素所在数组下标
+};
+struct compare
+{
+	bool operator()(node& node1, node& node2)
+	{
+		if (node1.i == INT_MAX || node2.i == INT_MAX)
+			return node1.i > node2.i;
+		return node1.m_ViewRange->GetActor()->ID() > node2.m_ViewRange->GetActor()->ID();//这是小根堆
+	}
+};
+void mul_sort(std::vector<InPosActors*>& nums, vector<ViewRange*>& res) {
+	int size = 0;
+	for (auto item = nums.begin(); item != nums.end(); item++)
+		size += (*item)->m_SkipList->count;
+	res.resize(size);
+
+	int k = nums.size();
+	priority_queue<node, vector<node>, compare> que;
+	for (int i = 0; i < k; i++) { 
+		struct sk_link* pos = nums[i]->m_SkipList->head[0].next; 
+		struct skipnode* node = list_entry(pos, struct skipnode, link[0]);
+		ViewRange* range = (ViewRange*)node->value;
+		que.push({ pos,range,i,0 });
+	} 
+	for (int j = 0; j < size; j++) {
+		node currt = que.top();
+		que.pop();
+		res[j] = currt.m_ViewRange;
+		node next;
+		next.i = currt.i + 1;
+		next.k = currt.k;
+		if (next.i >= nums[currt.k]->m_SkipList->count) {
+			next.i = INT_MAX; 
+		}
+		else {
+			next.m_Point = currt.m_Point->next;
+			next.m_ViewRange = (ViewRange*)list_entry(next.m_Point, struct skipnode, link[0])->value;
+		}
+		que.push(next);
+	}
+
+}  
 // 获取到范围内的所有合适的角色
-int AxisMap::GetRangeActors(std::vector<ActorID>& outData, const b2AABB& range)
+int AxisMap::GetRangeActors(std::vector<ViewRange*>& outData, const b2AABB& range)
 {
 	std::vector<InPosActors*> compareArr;//当前的数据信息
 	InPosActors posActor;
@@ -105,20 +154,18 @@ int AxisMap::GetRangeActors(std::vector<ActorID>& outData, const b2AABB& range)
 			return id1->m_Position.x > id2->m_Position.x;
 		return id1->m_Position.y > id2->m_Position.y;
 		});//-- 如果有相同的,直接开始迭代,否则减减后开始迭代 
-	cout << m_RecordArray[PointAxisType::LEFT_BUTTOM].end() - lowPointItor << endl;
+
+	compareArr.resize((m_RecordArray[PointAxisType::LEFT_BUTTOM].end() - lowPointItor) + (upPointItor  - m_RecordArray[PointAxisType::RIGHT_TOP].begin()) );
 	std::copy(lowPointItor, m_RecordArray[PointAxisType::LEFT_BUTTOM].end(), compareArr.begin());//从头开始赋值
 	auto midItor = compareArr.end() - (upPointItor - m_RecordArray[PointAxisType::RIGHT_TOP].begin());//获取到前的中间值
-	std::copy(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), upPointItor, midItor);//从头开始赋值
+	std::copy(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), upPointItor, midItor);//从头开始赋值 
 
-	
-
-	std::inplace_merge(compareArr.begin(), midItor, compareArr.end(), InPosActors());
-	outData.resize(compareArr.size());
-	ActorID* actorData = outData.data();
-	for (int i = 0;i < compareArr.size();i++)
-		actorData[i] = compareArr[i]->m_ActorID;
+	mul_sort(compareArr,outData);
+	outData.resize( unique(outData.begin(), outData.end())- outData.begin());
 	return outData.size();
 }
+
+
 void AxisDistanceManager::ActorsMove()
 {
 	ViewRange* actorView = NULL;//首先移动所有的角色

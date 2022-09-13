@@ -55,7 +55,7 @@ static inline int list_empty(struct sk_link* link)
 #define skiplist_foreach_safe(pos, n, end) \
         for (n = pos->next; pos != end; pos = n, n = pos->next)
 
-#define MAX_LEVEL 32  /* Should be enough for 2^32 elements */
+static const int MAX_LEVEL = 32; /* Should be enough for 2^32 elements */
 
 struct skiplist {
     int level;
@@ -69,7 +69,7 @@ struct skipnode {
     struct sk_link link[0];
 };
 
-static struct skipnode* skipnode_new(int level, int key, int value)
+static struct skipnode* skipnode_new(int level, int key, int64_t value)
 {
     struct skipnode* node;
     node = (struct skipnode*)malloc(sizeof(*node) + level * sizeof(struct sk_link));
@@ -122,6 +122,8 @@ static int random_level(void)
 
 static struct skipnode* skiplist_search(struct skiplist* list, int key)
 {
+    if (list->count == 0)
+        return NULL;
     struct skipnode* node = NULL;
     int i = list->level - 1;
     struct sk_link* pos = &list->head[i];
@@ -266,7 +268,7 @@ static void GetJumpListValue(struct skiplist* list,std::vector<Cls>& outData) {
     for (; pos != end; pos = pos->next) {
         node = list_entry(pos, struct skipnode, link[0]);
         data[i++] = (Cls)node->value;
-    }
+    } 
 }
 
 #endif  /* _SKIPLIST_H */

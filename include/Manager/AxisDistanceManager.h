@@ -50,7 +50,7 @@ public:
 	bool AddtionViewRange(ViewRange* actor, b2AABB& aabb);//添加一个点位
 	void DeleteViewRange(ViewRange* actor, b2AABB& aabb);//删除一个点位  
 	void ReadyInitActorData();//初始化点位 
-	int GetRangeActors(std::vector<ActorID>& outData, const b2AABB& range);//寻找相交 的AABB
+	int GetRangeActors(std::vector<ViewRange*>& outData, const b2AABB& range);//寻找相交 的AABB
 	AxisMap() {
 		m_RecordArray[PointAxisType::LEFT_BUTTOM].reserve(10);
 		m_RecordArray[PointAxisType::RIGHT_TOP].reserve(10);
@@ -64,7 +64,7 @@ public:
 	BodyData* GetActor();//当前的视图对象
 	const b2Vec2& GetViewRange(); //获取到当前的观察范围
 	const b2Vec2& GetBodyPos();//获取到当前玩家的点位 
-	std::vector<ActorID>& GetObserverArray();//获取到所有可见角色 
+	std::vector<ViewRange*>& GetObserverArray();//获取到所有可见角色 
 	b2AABB& GetBodyAABB();//获取到当前角色的刚体AABB   
 	const b2AABB& GetViewAABB() const;//获取到当前角色的刚体AABB 
 	const b2AABB& GetAABB(PointType type) const;//获取到当前角色的刚体AABB 
@@ -86,7 +86,7 @@ private:
 	BodyData* m_Actor;//当前的角色 
 	b2Vec2 m_BodyPos;//上一次的角色位置
 
-	std::vector<ActorID> m_ObserverArr;//可以看到的角色列表    
+	std::vector<ViewRange*> m_ObserverArr;//可以看到的角色列表    
 
 	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 
@@ -164,8 +164,10 @@ inline BodyData* ViewRange::GetActor() {//获取到当前的角色
 }
 
 inline bool ViewRange::InObserverContain(ViewRange* actor) {//移动的角色询问当前是否还在监听范围内  
-	auto startItor = std::lower_bound(m_ObserverArr.begin(), m_ObserverArr.end(),actor->GetActor()->ID());
-	return startItor != m_ObserverArr.end() && *startItor == actor->GetActor()->ID(); 
+	auto startItor = std::lower_bound(m_ObserverArr.begin(), m_ObserverArr.end(), actor, [](ViewRange* k1, ViewRange* k2)->bool {
+		return k1->GetActor()->ID() < k2->GetActor()->ID();
+		});
+	return startItor != m_ObserverArr.end() && (* startItor)->GetActor()->ID() == actor->GetActor()->ID();
 }
 inline const b2AABB& ViewRange::GetAABB(PointType type) const//获取到当前角色的刚体AABB 
 {
@@ -180,7 +182,7 @@ inline bool ViewRange::IsRefreshActorView()//计算视差,大于多少才会重计算
 		return true;
 	return false;
 }
-inline std::vector<ActorID>& ViewRange::GetObserverArray()//获取到所有可见角色
+inline std::vector<ViewRange*>& ViewRange::GetObserverArray()//获取到所有可见角色
 {
 	return this->m_ObserverArr;
 }
@@ -205,7 +207,7 @@ inline void AxisDistanceManager::UnregisterBody(ActorID id)
 {
 	if (!m_ViewObjMap.count(id)) return;//未注册过
 	ViewRange* rangeObj = m_ViewObjMap[id];//获取到对象 
-	m_AxisBodyMap.DeleteViewRange(id, rangeObj->GetBodyAABB());
+	m_AxisBodyMap.DeleteViewRange(rangeObj, rangeObj->GetBodyAABB());
 	delete rangeObj;
 	m_ViewObjMap.erase(id);
 }

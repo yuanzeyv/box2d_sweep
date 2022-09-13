@@ -53,14 +53,11 @@ public:
 		 
 		__DrawShape(viewRange , visibleMap);
 	}
-	void __DrawShape(ViewRange* viewRange ,vector<ActorID>& bodyMap)
-	{
-		auto mana = BodyManager::Instance();
-		auto axisMana = AxisDistanceManager::Instance();
+	void __DrawShape(ViewRange* viewRange ,vector<ViewRange*>& bodyMap)
+	{ 
 		for (auto item = bodyMap.begin(); item != bodyMap.end(); item++)
 		{
-			const BodyData* bodyBase = mana.GetBodyData(*item);
-			const b2Body* body = bodyBase->GetBody();
+			const b2Body* body = ( * item)->GetActor()->GetBody();
 			const b2Transform& xf = body->GetTransform();
 			for (const b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
 			{

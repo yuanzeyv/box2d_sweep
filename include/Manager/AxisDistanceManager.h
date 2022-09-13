@@ -36,7 +36,7 @@ public:
 	bool operator()(const InPosActors* id1, const InPosActors* id2);
 public:
 	b2Vec2 m_Position;
-	ActorID m_ActorID;
+	struct skiplist* m_SkipList;
 };
 
 

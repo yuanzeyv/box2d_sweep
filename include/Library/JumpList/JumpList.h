@@ -240,7 +240,7 @@ static void skiplist_dump(struct skiplist* list)
         end--;
     }
 }
-static void GetListKey(struct skiplist* list,std::vector<int64_t>& outData) {
+static void GetJumpListKey(struct skiplist* list,std::vector<int64_t>& outData) {
     outData.resize(list->count);
     int64_t* data = outData.data();
     struct skipnode* node;
@@ -255,7 +255,7 @@ static void GetListKey(struct skiplist* list,std::vector<int64_t>& outData) {
 }
 
 template <class Cls>
-static void GetListValue(struct skiplist* list,std::vector<Cls>& outData) {
+static void GetJumpListValue(struct skiplist* list,std::vector<Cls>& outData) {
     outData.resize(list->count);
     Cls* data = outData.data();
     struct skipnode* node;
@@ -265,7 +265,7 @@ static void GetListValue(struct skiplist* list,std::vector<Cls>& outData) {
     pos = pos->next;
     for (; pos != end; pos = pos->next) {
         node = list_entry(pos, struct skipnode, link[0]);
-        data[i++] = (Cls*)node->value;
+        data[i++] = (Cls)node->value;
     }
 }
 

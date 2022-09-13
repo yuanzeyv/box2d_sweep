@@ -61,27 +61,21 @@ void AxisMap::DeleteViewRange(ViewRange* actor, b2AABB& aabb)
 }
 //准备计算了,初始化当前的数据信息
 void AxisMap::ReadyInitActorData()
-{
-	size_t size[PointAxisType::MAX_AXIS_TYPE] = { 0,0 };
-	//获取到大小
+{ 
 	for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++) {
-		auto& actorMap = m_AxisActors[i];
-		for (auto actorSet = actorMap.begin(); actorSet != actorMap.end(); actorSet++)
-			size[i] += actorSet->second.size();
-	}
-	for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++) {
+		size_t size = m_AxisActors[i].size();//获取到当前的大小
 		size_t nowSize = m_RecordArray[i].size();//获取到当前的大小
-		bool isAdd = (size[i] - nowSize) > 0;
+		bool isAdd = (size - nowSize) > 0;
 		InPosActors** actorData = m_RecordArray[i].data();
 		if (isAdd) {
-			m_RecordArray[i].resize(size[i]);
-			for (int index = nowSize;index < size[i];index++)
+			m_RecordArray[i].resize(size);
+			for (int index = nowSize;index < size;index++)
 				actorData[index] = m_InPosActorsGenerate.RequireObj();
 		}
 		else {
-			for (int index = nowSize;index < size[i];index++)
+			for (int index = nowSize;index < size;index++)
 				m_InPosActorsGenerate.BackObj(actorData[index]);
-			m_RecordArray[i].resize(size[i]);
+			m_RecordArray[i].resize(size);
 		}
 	}
 	for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++) {
@@ -89,11 +83,8 @@ void AxisMap::ReadyInitActorData()
 		auto& actorMap = m_AxisActors[i];
 		InPosActors** actorData = m_RecordArray[i].data();//重新设置数组的大小
 		for (auto actorSet = actorMap.begin(); actorSet != actorMap.end(); actorSet++) {
-			for (auto actorIDItro = actorSet->second.begin();actorIDItro != actorSet->second.end();actorIDItro++) {
-				actorData[index]->m_Position.Set(*actorSet->first);
-				actorData[index]->m_ActorID = *actorIDItro;
-				index++;
-			}
+			actorData[index]->m_Position.Set(*actorSet->first);
+			actorData[index]->m_SkipList = actorSet->second;
 		}
 	}
 }

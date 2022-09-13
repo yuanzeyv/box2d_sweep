@@ -49,15 +49,17 @@ public:
 	void DrawShape(b2Body* body)
 	{
 		ViewRange* viewRange = AxisDistanceManager::Instance().GetViewRange(body->ID()); 
-		auto visibleMap = viewRange->GetVisibleMap();
+		auto visibleMap = viewRange->GetObserverArray();
 		 
-		__DrawShape(visibleMap);
+		__DrawShape(viewRange , visibleMap);
 	}
-	void __DrawShape(unordered_map<int64_t, ViewRange*>& bodyMap)
-	{   
+	void __DrawShape(ViewRange* viewRange ,vector<ActorID>& bodyMap)
+	{
+		auto mana = BodyManager::Instance();
+		auto axisMana = AxisDistanceManager::Instance();
 		for (auto item = bodyMap.begin(); item != bodyMap.end(); item++)
 		{
-			const BodyData* bodyBase = item->second->GetActor();
+			const BodyData* bodyBase = mana.GetBodyData(*item);
 			const b2Body* body = bodyBase->GetBody();
 			const b2Transform& xf = body->GetTransform();
 			for (const b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext())
@@ -87,14 +89,14 @@ public:
 					m_world->DrawShape(f, xf, b2Color(0.9f, 0.7f, 0.7f));
 				}
 			}
-			auto& bodyAABB = item->second->GetBodyAABB();
+			auto& bodyAABB = viewRange->GetBodyAABB();
 			b2Vec2 vs[4];
 			vs[0].Set(bodyAABB.lowerBound.x, bodyAABB.lowerBound.y);
 			vs[1].Set(bodyAABB.upperBound.x, bodyAABB.lowerBound.y);
 			vs[2].Set(bodyAABB.upperBound.x, bodyAABB.upperBound.y);
 			vs[3].Set(bodyAABB.lowerBound.x, bodyAABB.upperBound.y);
 			m_world->m_debugDraw->DrawPolygon(vs, 4, b2Color(0.9f, 0.1f, 0.1f));
-			auto& viewAABB = item->second->GetViewAABB(); 
+			auto& viewAABB = viewRange->GetViewAABB();
 			vs[0].Set(viewAABB.lowerBound.x, viewAABB.lowerBound.y);
 			vs[1].Set(viewAABB.upperBound.x, viewAABB.lowerBound.y);
 			vs[2].Set(viewAABB.upperBound.x, viewAABB.upperBound.y);

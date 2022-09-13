@@ -285,6 +285,8 @@ set(BOX2D_HEADER_FILES
 	../include/Library/lua/lvm.h
 	../include/Library/lua/lzio.h 
 
+	../include/Library/JumpList/JumpList.h 
+
 	
 	../include/PySourceParse/ShapeBase.h
 	../include/PySourceParse/PolygonShapeBase.h

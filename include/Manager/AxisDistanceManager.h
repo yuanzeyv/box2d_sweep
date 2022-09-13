@@ -11,6 +11,8 @@
 #include <algorithm>
 #include "Define.h"  
 #include "TemplateBoard.h"  
+#include "Library/JumpList/JumpList.h"
+class ViewRange;
 enum PointType {
 	BODY_TYPE = 0,//¸ÕÌåÀàĞÍ
 	VIEW_TYPE = 1,//ÊÓÍ¼ÀàĞÍ
@@ -22,7 +24,7 @@ enum PointAxisType {
 	MAX_AXIS_TYPE,
 };
 struct b2VecCompare {
-	bool operator()(const b2Vec2*& k1, const b2Vec2*& k2) const {
+	bool operator()(const b2Vec2* k1, const b2Vec2* k2) const {
 		if (k1->x != k2->x)
 			return k1->x < k2->x;
 		return k1->y < k2->y;
@@ -30,91 +32,30 @@ struct b2VecCompare {
 };  
 class InPosActors{
 public:
-	static inline bool InPosActorsCompare(InPosActors& id1, InPosActors& id2) {
-		if (id1.m_Position.x != id2.m_Position.x)
-			return id1.m_Position.x < id2.m_Position.x; 
-		return id1.m_Position.y < id2.m_Position.y;
-	}
+	InPosActors(){}
+	bool operator()(const InPosActors* id1, const InPosActors* id2);
 public:
-	InPosActors() :m_Position() {
-	}
 	b2Vec2 m_Position;
-	std::set<ActorID> m_ActorsSet;
+	ActorID m_ActorID;
 };
+
 
 class AxisMap{
 private: 
-	std::map<b2Vec2*,std::unordered_set<ActorID>, b2VecCompare> m_AxisActors[PointAxisType::MAX_AXIS_TYPE];//¼ÇÂ¼Ò»×éÒÔµãÎ»±£´æµÄÎŞĞòµÄÊÓÍ¼¶ÔÏó
-
+	std::map<b2Vec2*, struct skiplist*, b2VecCompare> m_AxisActors[PointAxisType::MAX_AXIS_TYPE];//¼ÇÂ¼Ò»×éÒÔµãÎ»±£´æµÄÎŞĞòµÄÊÓÍ¼¶ÔÏó
 	std::vector<InPosActors*> m_RecordArray[PointAxisType::MAX_AXIS_TYPE];//ÎªÁË·ÀÖ¹ÖØ¸´±éÀú,ÀË·ÑĞÔÄÜ. ÔÚÃ¿´Î×¼±¸Ñ°ÕÒÊ±,ĞèÒª½«ËùÓĞmapµÄÊı¾İ,¿½±´µ½Êı×éÖĞÈ¥,ÒÔ¼Ó¿ìĞÔÄÜ
 	AutomaticGenerator<b2Vec2> m_b2VecIdleGenerate;//×Ô¶¯µÄÉú³ÉÊÓÍ¼¶ÔÏó¹ÜÀíµÄ¶ÔÏó 
+	AutomaticGenerator<InPosActors> m_InPosActorsGenerate;//×Ô¶¯µÄÉú³ÉÊÓÍ¼¶ÔÏó¹ÜÀíµÄ¶ÔÏó 
 public:
-	inline bool AddtionViewRange(ActorID actorID, b2AABB& aabb)
-	{
-		b2Vec2* point[PointAxisType::MAX_AXIS_TYPE];
-		point[PointAxisType::LEFT_BUTTOM] = &aabb.lowerBound;
-		point[PointAxisType::RIGHT_TOP] = &aabb.upperBound; 
-		for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++)
-		{
-			if (m_AxisActors[i].count(point[i]) == 0) {
-				auto b2Vec2Key = m_b2VecIdleGenerate.RequireObj();
-				m_AxisActors[i][b2Vec2Key];
-			}
-			auto actorSet = m_AxisActors[i][point[i]];
-			if (actorSet.count(actorID) == 0)
-				actorSet.insert(actorID);
-		}
+	bool AddtionViewRange(ViewRange* actor, b2AABB& aabb);//Ìí¼ÓÒ»¸öµãÎ»
+	void DeleteViewRange(ViewRange* actor, b2AABB& aabb);//É¾³ıÒ»¸öµãÎ»  
+	void ReadyInitActorData();//³õÊ¼»¯µãÎ» 
+	int GetRangeActors(std::vector<ActorID>& outData, const b2AABB& range);//Ñ°ÕÒÏà½» µÄAABB
+	AxisMap() {
+		m_RecordArray[PointAxisType::LEFT_BUTTOM].reserve(10);
+		m_RecordArray[PointAxisType::RIGHT_TOP].reserve(10);
 	}
-	inline void DeleteViewRange(ActorID actorID, b2AABB& aabb)
-	{
-		b2Vec2* point[PointAxisType::MAX_AXIS_TYPE];
-		point[PointAxisType::LEFT_BUTTOM] = &aabb.lowerBound;
-		point[PointAxisType::RIGHT_TOP] = &aabb.upperBound;
-		for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++)
-		{
-			if (m_AxisActors[i].count(point[i]) == 0)
-				continue;
-			auto actorSet = m_AxisActors[i][point[i]];
-			if (actorSet.count(actorID))
-				m_AxisActors[i][point[i]].erase(actorID);
-			if (actorSet.size() == 0) {
-				m_b2VecIdleGenerate.BackObj(m_AxisActors[i].find(point[i])->first);
-				m_AxisActors[i].erase(point[i]);
-			}
-		}
-	} 
-	//×¼±¸¼ÆËãÁË,³õÊ¼»¯µ±Ç°µÄÊı¾İĞÅÏ¢
-	inline void ReadyInitActorData()
-	{
-		//³õÊ¼»¯Êı¾İ,ÓÉÓÚÊ¹ÓÃsetËùÒÔÄ¬ÈÏÊÇÓĞĞòµÄ
-		for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++) {
-			auto& recordArray = m_RecordArray[i];
-			auto& actorSet = m_AxisActors[i];
-			recordArray.resize(actorSet.size());//ÖØĞÂÉèÖÃÊı×éµÄ´óĞ¡
-			InPosActors** actorData = recordArray.data();//ÖØĞÂÉèÖÃÊı×éµÄ´óĞ¡
-			for (auto item = actorSet.begin(); item != actorSet.end(); item++)
-				actorData[i] = *item;
-		}
-	}
-	// »ñÈ¡µ½·¶Î§ÄÚµÄËùÓĞºÏÊÊµÄ½ÇÉ«
-	inline int GetRangeActors(std::vector<ActorID>& outData, b2AABB& range)
-	{ 
-		std::vector<InPosActors*> compareArr;//µ±Ç°µÄÊı¾İĞÅÏ¢
-		//Ê×ÏÈÍ¨¹ı2·Ö²éÕÒ·¨,¿ìËÙÕÒµ½·ûºÏÒªÇóµÄÄÇ¸öµãÎ»
-		//ÅÅ³ı×îĞ¡µã´óÓÚ range µÄ×î´óµãµÄ
-		auto lowPointItor = std::lower_bound(m_RecordArray[PointAxisType::LEFT_BUTTOM].begin(), m_RecordArray[PointAxisType::LEFT_BUTTOM].begin(), range.upperBound); //++
-		auto upPointItor = std::upper_bound(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), m_RecordArray[PointAxisType::RIGHT_TOP].begin(), range.lowerBound);//-- Èç¹ûÓĞÏàÍ¬µÄ,Ö±½Ó¿ªÊ¼µü´ú,·ñÔò¼õ¼õºó¿ªÊ¼µü´ú
-		std::copy(lowPointItor, m_RecordArray[PointAxisType::LEFT_BUTTOM].end(), compareArr.begin());//´ÓÍ·¿ªÊ¼¸³Öµ
-		auto midItor = compareArr.end();//»ñÈ¡µ½Ç°µÄÖĞ¼äÖµ
-		std::copy(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), upPointItor, compareArr.begin());//´ÓÍ·¿ªÊ¼¸³Öµ
-		std::inplace_merge(compareArr.begin(), midItor, compareArr.end()); 
-		auto itorEnd = compareArr.end();
-		for (auto item = compareArr.begin(); item != itorEnd; item++) {
-			auto bestItor = std::lower_bound(outData.begin(), outData.end(),*(*item)->m_ActorsSet.begin());//ÕÒµ½ÔªÊı×é×îºÏÊÊµÄ²åÈëÎ»ÖÃ
-			std::copy((*item)->m_ActorsSet.begin(), (*item)->m_ActorsSet.end(), outData.end());//ºÏ²¢
-			std::inplace_merge(bestItor, outData.begin() + (*item)->m_ActorsSet.size(), outData.end()); 
-		}
-	}                                                                                                                                                                                    
+	~AxisMap();
 }; 
 
 class ViewRange{
@@ -123,29 +64,23 @@ public:
 	BodyData* GetActor();//µ±Ç°µÄÊÓÍ¼¶ÔÏó
 	const b2Vec2& GetViewRange(); //»ñÈ¡µ½µ±Ç°µÄ¹Û²ì·¶Î§
 	const b2Vec2& GetBodyPos();//»ñÈ¡µ½µ±Ç°Íæ¼ÒµÄµãÎ» 
-	const std::vector<ActorID>& GetObserverArray();//»ñÈ¡µ½ËùÓĞ¿É¼û½ÇÉ«
-	const std::unordered_map<ActorID, ViewRange*>& GetBeObseverView(ViewRange* actor);//Ä³Ò»¸ö½ÇÉ«½øÈëµ½ÁË±»¹Û²ìµÄÊÓÍ¼
-	b2AABB& GetBodyAABB() const;//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB   
+	std::vector<ActorID>& GetObserverArray();//»ñÈ¡µ½ËùÓĞ¿É¼û½ÇÉ« 
+	b2AABB& GetBodyAABB();//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB   
 	const b2AABB& GetViewAABB() const;//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
 	const b2AABB& GetAABB(PointType type) const;//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
-
-	void RefreshObserver(std::vector<ActorID>& actorArr);//Ã¿Ò»Ö¡Ö»Òª½øÈëµÄ,¾Í»áÖ±½ÓË¢ĞÂ 
-
+	 
 	bool InObserverContain(ViewRange* actor); //¼ÆËãÖÆ¶¨AABBÊÇ°üº¬×Ô¼º 
 
-	int IsRefreshActorView();//¼ÆËãÊÓ²î,´óÓÚ¶àÉÙ²Å»áÖØ¼ÆËã  
+	bool IsRefreshActorView();//¼ÆËãÊÓ²î,´óÓÚ¶àÉÙ²Å»áÖØ¼ÆËã  
 	void RecalcBodyPosition();//ÖØĞÂ»ñÈ¡µ½½ÇÉ«ÉÏÒ»´ÎÎ´Ë¢ĞÂµÄÎ»ÖÃ
 
 	void RecalcBodyAABB();//ÖØĞÂ¼ÆËãÊÓ¿Ú 
-	void RecalcViewAABB();//ÖØĞÂ¼ÆËãÊÓ¿Ú
-	void RecalcAABB(PointType type);//ÖØĞÂ¼ÆËãÊÓ¿Ú
+	void RecalcViewAABB();//ÖØĞÂ¼ÆËãÊÓ¿Ú 
 
 	void RecalcRefreshCondtion();//ÖØ¼ÆËãË¢ĞÂÌõ¼ş    
 
-	void GetObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//Ñ°ÕÒ×Ô¼ºÊÓ¿ÚµÄÄ³Ò»¸ö¶ÔÏó
-	void GetBeObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//Ñ°ÕÒ×Ô¼ºÊÓ¿ÚµÄÄ³Ò»¸ö¶ÔÏó
-
-	static bool Compare(ViewRange*& v1, ViewRange*& v2);
+	void GetObserverActor(std::vector<ViewRange*>::iterator& itor, ViewRange* actor);//Ñ°ÕÒ×Ô¼ºÊÓ¿ÚµÄÄ³Ò»¸ö¶ÔÏó 
+	 
 	~ViewRange() {}
 private:
 	BodyData* m_Actor;//µ±Ç°µÄ½ÇÉ« 
@@ -176,9 +111,7 @@ public:
 	void CalcViewObj();//ÖØ¼ÆËã 
 	static AxisDistanceManager& Instance();
 private:
-	AxisDistanceManager() {}
-	//Ñ°ÕÒÄ³Ò»¸öÖáµÄÄ³Ò»·¶Î§ÄÚµÄËùÓĞµ¥ÔªĞÅÏ¢
-	void InquiryAxisPoints(std::unordered_set<ActorID>& outData,const b2AABB& viewAABB);
+	AxisDistanceManager() {} 
 private:
 	//µ±Ç°ËùÓĞµÄ¾àÀë¶ÔÏó
 	AxisMap m_AxisBodyMap;//ÆäÖĞÓĞX×ø±êÁĞºÍY×ø±êÁĞ 
@@ -187,13 +120,7 @@ private:
 	std::unordered_map<ActorID, ViewRange*> m_DelayCalcMoveList;//½ÇÉ«¶ÔÓ¦µÄ·¶Î§ĞÅÏ¢
 	std::vector<ViewRange*> m_CalcMoveList;//Ó¦¸Ã±»¼ÆËãµÄÁĞ±í
 }; 
-
-inline void ViewRange::RefreshObserver(std::vector<ActorID>& actorArr)
-{ 
-	m_ObserverArr.resize(actorArr.size());
-	memcpy(m_ObserverArr.data(), actorArr.data(),sizeof(actorArr.size() * sizeof(ActorID)));
-	AxisDistanceManager& manager = AxisDistanceManager::Instance();  
-} 
+ 
 inline const b2Vec2& ViewRange::GetViewRange() //»ñÈ¡µ½µ±Ç°µÄÊÓÍ¼·¶Î§
 { 
 	return m_ObserverRange;
@@ -202,7 +129,7 @@ inline const b2Vec2& ViewRange::GetBodyPos() {//»ñÈ¡µ½µ±Ç°Íæ¼ÒµÄµãÎ»
 
 	return m_BodyPos; 
 } 
-inline b2AABB& ViewRange::GetBodyAABB() const//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
+inline b2AABB& ViewRange::GetBodyAABB()//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸ÕÌåAABB 
 {
 	return m_AABB[PointType::BODY_TYPE];
 }
@@ -221,14 +148,7 @@ inline void ViewRange::RecalcBodyAABB()//ÖØĞÂ¼ÆËãÊÓ¿Ú
 	m_Actor->CalcBodyAABB(); 
 	memcpy(&m_AABB[PointType::BODY_TYPE], &m_Actor->GetAABB(), sizeof(b2AABB));//¿½±´Êı¾İ
 	RecalcRefreshCondtion(); 
-}
-inline void ViewRange::RecalcAABB(PointType type)//ÖØĞÂ¼ÆËãÊÓ¿Ú
-{
-	if (type == PointType::BODY_TYPE)
-		RecalcBodyAABB();
-	else if (type == PointType::VIEW_TYPE)
-		RecalcViewAABB();
-}
+} 
 
 inline void ViewRange::RecalcBodyPosition()
 { 
@@ -251,16 +171,16 @@ inline const b2AABB& ViewRange::GetAABB(PointType type) const//»ñÈ¡µ½µ±Ç°½ÇÉ«µÄ¸
 {
 	return m_AABB[type];
 }
-inline int ViewRange::IsRefreshActorView()//¼ÆËãÊÓ²î,´óÓÚ¶àÉÙ²Å»áÖØ¼ÆËã
+inline bool ViewRange::IsRefreshActorView()//¼ÆËãÊÓ²î,´óÓÚ¶àÉÙ²Å»áÖØ¼ÆËã
 {
 	const b2Vec2& bodyPos = m_Actor->GetBody()->GetPosition();//»ñÈ¡µ½µ±Ç°µÄÎ»ÖÃ 
 	float xMinus = std::abs(bodyPos.x - m_BodyPos.x);
 	float yMinus = std::abs(bodyPos.y - m_BodyPos.y);
 	if (xMinus > m_OffsetCondtion.x || yMinus > m_OffsetCondtion.y)
-		return 1;
-	return 0;
+		return true;
+	return false;
 }
-inline const std::vector<ActorID>& ViewRange::GetObserverArray()//»ñÈ¡µ½ËùÓĞ¿É¼û½ÇÉ«
+inline std::vector<ActorID>& ViewRange::GetObserverArray()//»ñÈ¡µ½ËùÓĞ¿É¼û½ÇÉ«
 {
 	return this->m_ObserverArr;
 }
@@ -285,8 +205,7 @@ inline void AxisDistanceManager::UnregisterBody(ActorID id)
 {
 	if (!m_ViewObjMap.count(id)) return;//Î´×¢²á¹ı
 	ViewRange* rangeObj = m_ViewObjMap[id];//»ñÈ¡µ½¶ÔÏó 
-	RemoveAABB(PointType::BODY_TYPE,rangeObj);
-	RemoveAABB(PointType::BODY_TYPE, rangeObj);
+	m_AxisBodyMap.DeleteViewRange(id, rangeObj->GetBodyAABB());
 	delete rangeObj;
 	m_ViewObjMap.erase(id);
 }
@@ -321,4 +240,10 @@ inline AxisDistanceManager& AxisDistanceManager::Instance() {
 inline ViewRange* AxisDistanceManager::GetViewRange(ActorID actorID)
 {
 	return m_ViewObjMap[actorID];
+}
+
+inline bool InPosActors::operator()(const InPosActors* id1, const InPosActors* id2) {
+	if (id1->m_Position.x != id2->m_Position.x)
+		return id1->m_Position.x < id2->m_Position.x;
+	return id1->m_Position.y < id2->m_Position.y;
 }

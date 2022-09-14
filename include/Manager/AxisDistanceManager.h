@@ -17,17 +17,10 @@ enum PointType {
 	BODY_TYPE = 0,//刚体类型
 	VIEW_TYPE = 1,//视图类型
 	MAX_POINT_TYPE = 2,
-}; 
-enum PointAxisType {
-	LEFT_BUTTOM = 0,
-	RIGHT_TOP   = 1,
-	MAX_AXIS_TYPE,
-};
-struct b2VecCompare {
-	bool operator()(const b2Vec2* k1, const b2Vec2* k2) const {
-		if (k1->x != k2->x)
-			return k1->x < k2->x;
-		return k1->y < k2->y;
+};  
+struct XAxisComapare {
+	bool operator()(const float& xAxis1, const float& xAxis2) const {
+		return xAxis1 < xAxis2; 
 	}
 };  
 class InPosActors{
@@ -35,25 +28,24 @@ public:
 	InPosActors(){}
 	bool operator()(const InPosActors* id1, const InPosActors* id2);
 public:
-	b2Vec2 m_Position;
+	float m_PositionX;
 	struct skiplist* m_SkipList;
 };
 
 
 class AxisMap{
 private: 
-	std::map<b2Vec2*, struct skiplist*, b2VecCompare> m_AxisActors[PointAxisType::MAX_AXIS_TYPE];//记录一组以点位保存的无序的视图对象
-	std::vector<InPosActors*> m_RecordArray[PointAxisType::MAX_AXIS_TYPE];//为了防止重复遍历,浪费性能. 在每次准备寻找时,需要将所有map的数据,拷贝到数组中去,以加快性能
+	std::map<float, struct skiplist*, XAxisComapare> m_XAxisActors;//以每个AABB的左边点的X进行排序.
+	std::vector<InPosActors*> m_RecordArray;//为了防止重复遍历,浪费性能. 在每次准备寻找时,需要将所有map的数据,拷贝到数组中去,以加快性能
 	AutomaticGenerator<b2Vec2> m_b2VecIdleGenerate;//自动的生成视图对象管理的对象 
 	AutomaticGenerator<InPosActors> m_InPosActorsGenerate;//自动的生成视图对象管理的对象 
 public:
-	bool AddtionViewRange(ViewRange* actor, b2AABB& aabb);//添加一个点位
+	void AddtionViewRange(ViewRange* actor, b2AABB& aabb);//添加一个点位
 	void DeleteViewRange(ViewRange* actor, b2AABB& aabb);//删除一个点位  
 	void ReadyInitActorData();//初始化点位 
 	int GetRangeActors(std::vector<ViewRange*>& outData, const b2AABB& range);//寻找相交 的AABB
 	AxisMap() {
-		m_RecordArray[PointAxisType::LEFT_BUTTOM].reserve(10);
-		m_RecordArray[PointAxisType::RIGHT_TOP].reserve(10);
+		m_RecordArray.reserve(10); 
 	}
 	~AxisMap();
 }; 
@@ -245,7 +237,5 @@ inline ViewRange* AxisDistanceManager::GetViewRange(ActorID actorID)
 }
 
 inline bool InPosActors::operator()(const InPosActors* id1, const InPosActors* id2) {
-	if (id1->m_Position.x != id2->m_Position.x)
-		return id1->m_Position.x < id2->m_Position.x;
-	return id1->m_Position.y < id2->m_Position.y;
+	return id1->m_PositionX < id1->m_PositionX;
 }

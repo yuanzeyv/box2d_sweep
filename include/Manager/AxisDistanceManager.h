@@ -237,5 +237,5 @@ inline ViewRange* AxisDistanceManager::GetViewRange(ActorID actorID)
 }
 
 inline bool InPosActors::operator()(const InPosActors* id1, const InPosActors* id2) {
-	return id1->m_PositionX < id1->m_PositionX;
+	return id1->m_PositionX < id2->m_PositionX;
 }

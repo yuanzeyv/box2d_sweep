@@ -79,20 +79,21 @@ int AxisMap::GetRangeActors(std::vector<ViewRange*>& outData, const b2AABB& rang
 	InPosActors posActor; 
 	posActor.m_PositionX = range.upperBound.x;
 	int index = 0;
-	auto lowPointItor = std::upper_bound(m_RecordArray.begin(), m_RecordArray.end(),&posActor, InPosActors()); //先判断了X,在判断一遍Y
-	for (auto item = m_RecordArray.begin();item != lowPointItor;item++) {
-		skiplist* skipList = (*item)->m_SkipList;  
+	auto lowPointItorSize = std::lower_bound(m_RecordArray.begin(), m_RecordArray.end(), &posActor, InPosActors()) - m_RecordArray.begin(); //先判断了X,在判断一遍Y
+	InPosActors** recordData = m_RecordArray.data();
+	for (int i = 0; i < lowPointItorSize; i++) {
+		skiplist* skipList = recordData[i]->m_SkipList;
 		lowRangeArr.resize(skipList->count);
 		GetJumpListValue(skipList, lowRangeArr);//获取到所有符合描述的点  
 		ViewRange** viewRangeArr = lowRangeArr.data();
-		ViewRange* viewRangeTemp = NULL; 
-		for (int i = 0;i < lowRangeArr.size();i++) {  
-			 viewRangeTemp = viewRangeArr[i];
-			 b2AABB& AABB = viewRangeTemp->GetBodyAABB();
-			 //判断y点
-			 if (AABB.lowerBound.y > range.upperBound.y || range.lowerBound.x > AABB.upperBound.x || range.lowerBound.y > AABB.upperBound.y)
-			 	continue; 
-			outData.push_back(viewRangeTemp); 
+		ViewRange* viewRangeTemp = NULL;
+		for (int i = 0; i < lowRangeArr.size(); i++) {
+			viewRangeTemp = viewRangeArr[i];
+			b2AABB& AABB = viewRangeTemp->GetBodyAABB();
+			//判断y点
+			if (AABB.lowerBound.x > range.upperBound.x || AABB.lowerBound.y > range.upperBound.y || range.lowerBound.x > AABB.upperBound.x || range.lowerBound.y > AABB.upperBound.y)
+				continue;
+			outData.push_back(viewRangeTemp);
 		}
 	}
 	//auto t1 = std::chrono::high_resolution_clock::now(); 

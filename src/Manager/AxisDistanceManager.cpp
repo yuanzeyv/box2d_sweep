@@ -1,4 +1,5 @@
 #include "Manager/AxisDistanceManager.h" 
+
 #include<queue>
 using namespace std;    
 ViewRange::ViewRange(BodyData* bodyData, b2Vec2 range) :
@@ -64,29 +65,29 @@ void AxisMap::DeleteViewRange(ViewRange* actor, b2AABB& aabb)
 void AxisMap::ReadyInitActorData()
 { 
 	for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++) {
-		size_t size = m_AxisActors[i].size();//获取到当前的大小
-		size_t nowSize = m_RecordArray[i].size();//获取到当前的大小
-		bool isAdd = (size - nowSize) > 0;
-		InPosActors** actorData = m_RecordArray[i].data();
-		if (isAdd) {
-			m_RecordArray[i].resize(size);
-			for (int index = nowSize;index < size;index++)
-				actorData[index] = m_InPosActorsGenerate.RequireObj();
-		}
-		else {
-			for (int index = nowSize;index < size;index++)
-				m_InPosActorsGenerate.BackObj(actorData[index]);
-			m_RecordArray[i].resize(size);
-		}
-	}
-	for (int i = 0; i < PointAxisType::MAX_AXIS_TYPE; i++) {
-		int index = 0;
 		auto& actorMap = m_AxisActors[i];
+		size_t size = actorMap.size();//获取到当前的大小
+		size_t nowSize = m_RecordArray[i].size();//获取到当前的大小
+		if (size != nowSize) { 
+			if ((size - nowSize) > 0) {//需要添加的情况
+				m_RecordArray[i].resize(size);
+				InPosActors** actorData = m_RecordArray[i].data();
+				for (int index = nowSize;index < size;index++)
+					actorData[index] = m_InPosActorsGenerate.RequireObj();
+			} else {
+				InPosActors** actorData = m_RecordArray[i].data();
+				for (int index = nowSize;index < size;index++)
+					m_InPosActorsGenerate.BackObj(actorData[index]);
+				m_RecordArray[i].resize(size);
+			}
+		}
+		int index = 0; 
 		InPosActors** actorData = m_RecordArray[i].data();//重新设置数组的大小
-		for (auto actorSet = actorMap.begin(); actorSet != actorMap.end(); actorSet++) {
-			actorData[index]->m_Position.Set(*actorSet->first);
-			actorData[index]->m_SkipList = actorSet->second;
-			index++;
+		auto itorEnd = actorMap.end(); 
+		for (auto actorSet = actorMap.begin(); actorSet != itorEnd; actorSet++,index++) {
+			actorData[index]->m_Position.x = actorSet->first->x;
+			actorData[index]->m_Position.y = actorSet->first->y;
+			actorData[index]->m_SkipList = actorSet->second; 
 		}
 	}
 }//多个有序数组排序
@@ -135,36 +136,49 @@ void mul_sort(std::vector<InPosActors*>& nums, vector<ViewRange*>& res) {
 		}
 		que.push(next);
 	}
-
-}  
+}
+static bool ViewRangeIDCompare(ViewRange* node1, ViewRange* node2)
+{ 
+	return node1->GetActor()->ID() < node2->GetActor()->ID();
+}
 // 获取到范围内的所有合适的角色
 int AxisMap::GetRangeActors(std::vector<ViewRange*>& outData, const b2AABB& range)
-{
-	std::vector<InPosActors*> compareArr;//当前的数据信息
+{ 
+
+	std::vector<InPosActors*> lowPointArr;//低点匹配的点
+	std::vector<InPosActors*> upPointArr;//高点匹配的点
+	std::vector<ViewRange*> lowRangeArr;//低点匹配的点
+	std::vector<ViewRange*> upRangeArr;//高点匹配的点
+	outData.resize(0);
 	InPosActors posActor;
 	posActor.m_Position = range.upperBound;
-	auto lowPointItor = std::lower_bound(m_RecordArray[PointAxisType::LEFT_BUTTOM].begin(), m_RecordArray[PointAxisType::LEFT_BUTTOM].end(), &posActor,[](const InPosActors * id1, const InPosActors * id2)->bool{
-		if (id1->m_Position.x != id2->m_Position.x)
-			return id1->m_Position.x > id2->m_Position.x;
-		return id1->m_Position.y > id2->m_Position.y;
-	}); //++
+	int index = 0;
+	auto lowPointItor = std::upper_bound(m_RecordArray[PointAxisType::LEFT_BUTTOM].begin(), m_RecordArray[PointAxisType::LEFT_BUTTOM].end(), &posActor, InPosActors()); //先判断了X,在判断一遍Y
+	lowPointArr.resize(lowPointItor - m_RecordArray[PointAxisType::LEFT_BUTTOM].begin());
+	InPosActors** posData = lowPointArr.data();
+	for (auto item = m_RecordArray[PointAxisType::LEFT_BUTTOM].begin();item != lowPointItor;item++)
+		if (((*item)->m_Position.y - range.upperBound.y) <= 0)
+			posData[index++] = *item;
+	lowPointArr.resize(index);
+	mul_sort(lowPointArr, lowRangeArr);
+	 
+	index = 0;
 	posActor.m_Position = range.lowerBound;
-	auto upPointItor = std::upper_bound(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), m_RecordArray[PointAxisType::RIGHT_TOP].end(), &posActor, [](const InPosActors* id1, const InPosActors* id2)->bool {
-		if (id1->m_Position.x != id2->m_Position.x)
-			return id1->m_Position.x > id2->m_Position.x;
-		return id1->m_Position.y > id2->m_Position.y;
-		});//-- 如果有相同的,直接开始迭代,否则减减后开始迭代 
-
-	compareArr.resize((m_RecordArray[PointAxisType::LEFT_BUTTOM].end() - lowPointItor) + (upPointItor  - m_RecordArray[PointAxisType::RIGHT_TOP].begin()) );
-	std::copy(lowPointItor, m_RecordArray[PointAxisType::LEFT_BUTTOM].end(), compareArr.begin());//从头开始赋值
-	auto midItor = compareArr.end() - (upPointItor - m_RecordArray[PointAxisType::RIGHT_TOP].begin());//获取到前的中间值
-	std::copy(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), upPointItor, midItor);//从头开始赋值 
-
-	mul_sort(compareArr,outData);
-	outData.resize( unique(outData.begin(), outData.end())- outData.begin());
+	auto upPointItor = std::lower_bound(m_RecordArray[PointAxisType::RIGHT_TOP].begin(), m_RecordArray[PointAxisType::RIGHT_TOP].end(), &posActor, InPosActors());//++  
+	upPointArr.resize(m_RecordArray[PointAxisType::RIGHT_TOP].end() - upPointItor );
+	if (upPointArr.size() > 0) {
+		posData = upPointArr.data();
+		for (auto item = upPointItor;item != m_RecordArray[PointAxisType::RIGHT_TOP].end();item++) {
+			if ((range.lowerBound.y - (*item)->m_Position.y) <= 0)
+				posData[index++] = *item;
+		}
+		upPointArr.resize(index);
+		mul_sort(upPointArr, upRangeArr);
+		outData.resize(min(upRangeArr.size(), lowRangeArr.size())); 
+		outData.resize(set_intersection(lowRangeArr.begin(), lowRangeArr.end(), upRangeArr.begin(), upRangeArr.end(), outData.begin(), ViewRangeIDCompare) - outData.begin());
+	} 
 	return outData.size();
-}
-
+} 
 
 void AxisDistanceManager::ActorsMove()
 {
@@ -189,11 +203,18 @@ void AxisDistanceManager::ActorsMove()
  
 //重计算
 void AxisDistanceManager::CalcViewObj()
-{
+{ 
 	//准备计算数据
-	m_AxisBodyMap.ReadyInitActorData();
+	m_AxisBodyMap.ReadyInitActorData(); 
 	//重新计算自己所见所得
 	ViewRange* actoViewange = NULL;
+
+
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto moveCost = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << "     加数据耗时:" << moveCost << std::endl;
+
 	for (auto item = m_CalcMoveList.begin(); item != m_CalcMoveList.end(); item++) { 
 		ActorID actorID = (*item)->GetActor()->ID();
 		actoViewange = *item; 

@@ -30,22 +30,6 @@ local table = {
 
 	MonsterLevel = 1,
 
-},
-
-[3] = {
-
-	id = 3,
-
-	MonsterModel = 3,
-
-	ActorID = 3,
-
-	architectureName = "????",
-
-	POS = "0|3",
-
-	MonsterLevel = 1,
-
 }, 
 }
 

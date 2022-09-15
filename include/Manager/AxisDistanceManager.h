@@ -219,11 +219,11 @@ inline bool ViewRange::IsRefreshActorView()//计算视差,大于多少才会重计算
 }
 inline void ViewRange::GetObserverArray(std::vector<ViewRange*>& outData)//获取到所有可见角色
 { 
-	for (int i = 0;i < m_BeObserverPoint->size();i++){
-		if (m_BeObserverPoint->at(i)->m_IsVisible == 0)
-			outData.push_back(m_BeObserverPoint->at(i)->m_ViewRange); 
+	for (int i = 0;i < m_ObserverPoint->size();i++){
+		if (m_ObserverPoint->at(i)->m_IsVisible == 0)
+			outData.push_back(m_ObserverPoint->at(i)->m_ViewRange); 
 	} 
-	int index = m_BeObserverPoint->size();
+	int index = m_ObserverPoint->size();
 	for (auto item = m_ExtraObserverArr.begin();item != m_ExtraObserverArr.end();item++, index++) {
 		if (item->second->m_IsVisible == 0)
 			outData.push_back(item->second->m_ViewRange); 

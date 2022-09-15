@@ -17,6 +17,10 @@ ViewRange::ViewRange(BodyData* bodyData, b2Vec2 range) :
 void ViewRange::ChangeObserverStatus(ViewRange* ObserverActor, bool status)
 {
 	ActorID actorID = ObserverActor->GetActor()->ID();
+	if (actorID == 3)
+	{
+		cout << "AAAAA" << endl;
+	}
 	auto itor = lower_bound(m_BeObserverPoint->begin(), m_BeObserverPoint->end(), actorID, [](ViewObserverState* actor, ActorID id)->bool {return actor->m_ViewRange->GetActor()->ID() < id; });
 	ViewObserverState* statePoint = NULL;
 	if (itor != m_BeObserverPoint->end() && (*itor)->m_ViewRange->GetActor()->ID() == actorID) {
@@ -157,8 +161,8 @@ int AxisMap::SetRangeActors(PointType type, ViewRange* actor,std::vector<ViewObs
 		struct sk_link* end = &skipList->head[0];
 		pos = pos->next;
 		for (; pos != end; pos = pos->next) { 
-			viewRangeTemp = (ViewRange*)list_entry(pos, struct skipnode, link[0])->value;
-			b2AABB& AABB = viewRangeTemp->GetBodyAABB();
+			viewRangeTemp = (ViewRange*)list_entry(pos, struct skipnode, link[0])->value; 
+			b2AABB& AABB = type == PointType::BODY_TYPE == type ? viewRangeTemp->GetBodyAABB():viewRangeTemp->GetViewAABB();
 			if (AABB.lowerBound.x > range.upperBound.x || AABB.lowerBound.y > range.upperBound.y || range.lowerBound.x > AABB.upperBound.x || range.lowerBound.y > AABB.upperBound.y)
 				continue;
 			tempData.push_back(viewRangeTemp); 
@@ -254,12 +258,13 @@ void AxisDistanceManager::CalcObserver(vector<ViewRange*>& moveRangeArr)//重计算
 		set_difference(frontObserverCalcArr.begin(), frontObserverCalcArr.end(), observerCalcArr.begin(), observerCalcArr.end(), inserter(differenceInVisibleCalcArr, differenceInVisibleCalcArr.begin()), ViewRangePointComapre);
 		set_difference(differenceInVisibleCalcArr.begin(), differenceInVisibleCalcArr.end(), moveRangeArr.begin(), moveRangeArr.end(), inserter(finalDifferenceArr, finalDifferenceArr.begin()), ViewRangePointComapre);
 		for (auto item = finalDifferenceArr.begin();item != finalDifferenceArr.end();item++) {
-			actoViewange->ChangeBeObserverStatus(*item, 1); //设置当前对象未可视状态
+			(* item )->ChangeBeObserverStatus(actoViewange, 1); //设置当前对象未可视状态
 		}
+		finalDifferenceArr.resize(0);
 		set_difference(observerCalcArr.begin(), observerCalcArr.end(), frontObserverCalcArr.begin(), frontObserverCalcArr.end(), inserter(differenceVisibleCalcArr, differenceVisibleCalcArr.begin()), ViewRangePointComapre);
 		set_difference(differenceVisibleCalcArr.begin(), differenceVisibleCalcArr.end(), moveRangeArr.begin(), moveRangeArr.end(), inserter(finalDifferenceArr, finalDifferenceArr.begin()), ViewRangePointComapre);
 		for (auto item = finalDifferenceArr.begin();item != finalDifferenceArr.end();item++) {
-			actoViewange->ChangeBeObserverStatus(*item, 0); //设置当前对象未可视状态
+			(*item)->ChangeBeObserverStatus(actoViewange, 0); //设置当前对象未可视状态
 		}
 		observerCalcArr.clear();
 		differenceInVisibleCalcArr.clear();
@@ -285,37 +290,38 @@ void AxisDistanceManager::CalcBeObserver(vector<ViewRange*>& moveRangeArr)//重计
 	int index;
 	for (int i = 0;i < moveSize;i++) {
 		actoViewange = moveArrData[i];
-		frontBeObserverCalcArr.resize(actoViewange->m_FrontObserverPoint->size() + actoViewange->m_ExtraObserverArr.size());
+		frontBeObserverCalcArr.resize(actoViewange->m_FrontBeObserverPoint->size() + actoViewange->m_ExtraBeObserverArr.size());
 		//取得对象上一帧所观察的到的所有的信息
 		observerArr = frontBeObserverCalcArr.data();
 		index = 0;
-		for (int pos = 0;pos < actoViewange->m_FrontObserverPoint->size();pos++) {
-			if (actoViewange->m_FrontObserverPoint->at(pos)->m_IsVisible == 1)
+		for (int pos = 0;pos < actoViewange->m_FrontBeObserverPoint->size();pos++) {
+			if (actoViewange->m_FrontBeObserverPoint->at(pos)->m_IsVisible == 1)
 				continue;
-			observerArr[index++] = actoViewange->m_FrontObserverPoint->at(pos)->m_ViewRange;//可见才加入,否则视为被删除的
+			observerArr[index++] = actoViewange->m_FrontBeObserverPoint->at(pos)->m_ViewRange;//可见才加入,否则视为被删除的
 		}
-		for (auto item = actoViewange->m_ExtraObserverArr.begin();item != actoViewange->m_ExtraObserverArr.end();item++) {
+		for (auto item = actoViewange->m_ExtraBeObserverArr.begin();item != actoViewange->m_ExtraBeObserverArr.end();item++) {
 			if (item->second->m_IsVisible == 1)
 				continue;
 			observerArr[index++] = item->second->m_ViewRange;//可见才加入,否则视为被删除的
 		}
 		frontBeObserverCalcArr.resize(index);
 		//取得对象这一帧所观察的到的所有的信息 
-		BeObserverCalcArr.resize(actoViewange->m_ObserverPoint->size());
+		BeObserverCalcArr.resize(actoViewange->m_BeObserverPoint->size());
 		observerArr = BeObserverCalcArr.data();
-		for (int pos = 0;pos < actoViewange->m_ObserverPoint->size();pos++) {
-			observerArr[pos] = actoViewange->m_ObserverPoint->at(pos)->m_ViewRange;
+		for (int pos = 0;pos < actoViewange->m_BeObserverPoint->size();pos++) {
+			observerArr[pos] = actoViewange->m_BeObserverPoint->at(pos)->m_ViewRange;
 		}
 		//前一帧 与 本帧取差集. 得到应该被设置为隐藏的单元
 		set_difference(frontBeObserverCalcArr.begin(), frontBeObserverCalcArr.end(), BeObserverCalcArr.begin(), BeObserverCalcArr.end(), inserter(differenceInVisibleCalcArr, differenceInVisibleCalcArr.begin()), ViewRangePointComapre);
 		set_difference(differenceInVisibleCalcArr.begin(), differenceInVisibleCalcArr.end(), moveRangeArr.begin(), moveRangeArr.end(), inserter(finalDifferenceArr, finalDifferenceArr.begin()), ViewRangePointComapre);
 		for (auto item = finalDifferenceArr.begin();item != finalDifferenceArr.end();item++) {
-			actoViewange->ChangeObserverStatus(*item, 1); //设置当前对象未可视状态
+			(*item)->ChangeObserverStatus(actoViewange, 1); //设置当前对象未可视状态
 		} 
 		set_difference(BeObserverCalcArr.begin(), BeObserverCalcArr.end(), frontBeObserverCalcArr.begin(), frontBeObserverCalcArr.end(), inserter(differenceVisibleCalcArr, differenceVisibleCalcArr.begin()), ViewRangePointComapre);
+		finalDifferenceArr.resize(0);
 		set_difference(differenceVisibleCalcArr.begin(), differenceVisibleCalcArr.end(), moveRangeArr.begin(), moveRangeArr.end(), inserter(finalDifferenceArr, finalDifferenceArr.begin()), ViewRangePointComapre);
 		for (auto item = finalDifferenceArr.begin();item != finalDifferenceArr.end();item++) {
-			actoViewange->ChangeObserverStatus(*item, 0); //设置当前对象未可视状态
+			(*item)->ChangeObserverStatus(actoViewange, 0); //设置当前对象未可视状态
 		}
 		BeObserverCalcArr.clear();
 		differenceInVisibleCalcArr.clear();
@@ -327,6 +333,8 @@ void AxisDistanceManager::CalcBeObserver(vector<ViewRange*>& moveRangeArr)//重计
 //重计算
 void AxisDistanceManager::CalcViewObj()
 {
+	if (m_CalcMoveList.size() <= 0) 
+		return;
 	//准备计算数据
 	m_AxisBodyMap->ReadyInitActorData();
 	//获取到当前的移动列表的数组

@@ -45,7 +45,7 @@ local table = {
 
 	IsInVincible = 1,
 
-	Time1Param = "2|1",
+	Time1Param = "0.2|1",
 
 	Time1Execute = "11|4|4",
 

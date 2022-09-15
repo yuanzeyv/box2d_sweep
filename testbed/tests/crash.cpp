@@ -49,9 +49,10 @@ public:
 	void DrawShape(b2Body* body)
 	{
 		ViewRange* viewRange = AxisDistanceManager::Instance().GetViewRange(body->ID()); 
-		auto visibleMap = viewRange->GetObserverArray();
+		vector<ViewRange*> bodyMap;
+		viewRange->GetObserverArray(bodyMap);
 		 
-		__DrawShape(viewRange , visibleMap);
+		__DrawShape(viewRange , bodyMap);
 	}
 	void __DrawShape(ViewRange* viewRange ,vector<ViewRange*>& bodyMap)
 	{ 

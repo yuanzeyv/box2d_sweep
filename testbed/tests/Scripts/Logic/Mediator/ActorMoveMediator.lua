@@ -20,8 +20,8 @@ function ActorOperationMediator:KeyInput_Handle(data)
  
     print(data.actorID,"当前的角色ID")
     if move[data.pushKey] then 
-        move[data.pushKey].x = move[data.pushKey].x / 5
-        move[data.pushKey].y = move[data.pushKey].y /5
+        move[data.pushKey].x = move[data.pushKey].x 
+        move[data.pushKey].y = move[data.pushKey].y 
         self.ActorMoveProxy:FlushActorMoveStatus(data.actorID, move[data.pushKey],1)
         --self.NavmeshManagerProxy = self:getFacade():retrieveProxy(ProxyTable.NavmeshManagerProxy) 
         --print("当前的距离为",self.NavmeshManagerProxy:Recast(Actor,sol.b2Vec2.new(30,30)) )

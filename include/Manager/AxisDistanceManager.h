@@ -47,7 +47,7 @@ public:
 	void DeleteViewRange(PointType type, ViewRange* actor, b2AABB& aabb);//删除一个点位  
 	void ReadyInitActorData();//初始化点位 
 	 
-	int SetRangeActors(PointType type,ViewRange* actor, std::vector<ViewObserverState*>& outData, const b2AABB& range);//寻找相交 的AABB  
+	int SetRangeActors(PointType type, PointType compareType, ViewRange* actor, std::vector<ViewObserverState*>& outData, const b2AABB& range);//寻找相交 的AABB  
 
 	AxisMap():m_InPosActorsGenerate(200) {}
 	~AxisMap();
@@ -90,7 +90,7 @@ public:
 			m_ViewObserverStateGenerate.BackObj(obj->at(i));
 		obj->clear();
 	}
-	void RecycleStatusObj(std::unordered_map<ActorID, ViewObserverState*>& obj)
+	void RecycleStatusObj(std::map<ActorID, ViewObserverState*>& obj)
 	{
 		for(auto item = obj.begin();item != obj.end();item++)
 			m_ViewObserverStateGenerate.BackObj(item->second); 
@@ -111,12 +111,12 @@ private:
 	std::vector<ViewObserverState*>* m_FrontObserverPoint;//第一个原始代表上一帧可以看到的
 	std::vector<ViewObserverState*>* m_ObserverPoint;//第二个代表本帧
 	std::vector<ViewObserverState*> m_ObserverArr[2];//可以看到的角色列表.
-	std::unordered_map<ActorID,ViewObserverState*> m_ExtraObserverArr;//当值被别人观察到的时候,不好直接插入数组,所有使用这个方法
+	std::map<ActorID,ViewObserverState*> m_ExtraObserverArr;//当值被别人观察到的时候,不好直接插入数组,所有使用这个方法
 
 	std::vector<ViewObserverState*>* m_FrontBeObserverPoint;//第一个原始代表上一帧可以看到的
 	std::vector<ViewObserverState*>* m_BeObserverPoint;//第二个代表本帧
 	std::vector<ViewObserverState*> m_BeObserverArr[2];//可以看到的角色列表.
-	std::unordered_map<ActorID, ViewObserverState*> m_ExtraBeObserverArr;//可以看到的角色列表    
+	std::map<ActorID, ViewObserverState*> m_ExtraBeObserverArr;//可以看到的角色列表    
 
 	b2Vec2 m_ObserverRange;//当前角色可以观察到的范围  
 
@@ -153,7 +153,7 @@ private:
 	std::unordered_map<ActorID, ViewRange*> m_ViewObjMap;//角色对应的范围信息 
 
 	std::map<ActorID, ViewRange*> m_DelayCalcMoveList;//角色对应的范围信息
-	std::map<ActorID,ViewRange*> m_CalcMoveList;//应该被计算的列表
+	std::vector<ViewRange*> m_CalcMoveList;//应该被计算的列表
 }; 
  
 inline const b2Vec2& ViewRange::GetViewRange() //获取到当前的视图范围

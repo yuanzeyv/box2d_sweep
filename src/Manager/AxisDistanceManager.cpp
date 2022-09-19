@@ -1,9 +1,6 @@
 #include "Manager/AxisDistanceManager.h" 
-
-#include<queue>
 using namespace std;    
-ViewRange::ViewRange(BodyData* bodyData, b2Vec2 range) :
-	m_ObserverRange(range),
+ViewRange::ViewRange(BodyData* bodyData, b2Vec2 range) :m_ObserverRange(range),
 	m_BodyPos(MAX_DISTANCE, MAX_DISTANCE),
 	m_Actor(bodyData), 
 	m_OffsetCondtion(-9999,-9999),
@@ -22,8 +19,7 @@ void ViewRange::ChangeObserverStatus(ViewRange* ObserverActor, bool status)
 	ViewObserverState* statePoint = NULL;
 	if ((findData - observerDataPoint) != m_ObserverPoint->size() && (*findData)->m_ViewRange->GetActor()->ID() == actorID) {
 		statePoint = *findData;
-	}
-	else if (m_ExtraObserverArr.count(actorID)) {
+	}else if (m_ExtraObserverArr.count(actorID)) {
 		statePoint = m_ExtraObserverArr[actorID];
 	}
 	if (statePoint == NULL && status == 1)
@@ -145,7 +141,7 @@ static bool ViewRangeIDCompare(ViewRange* node1, ViewRange* node2)
 	return node1->GetActor()->ID() < node2->GetActor()->ID();
 } 
 // 获取到范围内的所有合适的角色
-int AxisMap::SetRangeActors(PointType type, PointType compareType, ViewRange* actor,std::vector<ViewObserverState*>& outData, const b2AABB& range)
+int AxisMap::SetRangeActors(PointType type, ViewRange* actor,std::vector<ViewObserverState*>& outData, const b2AABB& range)
 { 
 	InPosActors posActor; 
 	posActor.m_PositionX = range.lowerBound.x; 
@@ -168,7 +164,7 @@ int AxisMap::SetRangeActors(PointType type, PointType compareType, ViewRange* ac
 		pos = pos->next;
 		for (; pos != end; pos = pos->next) { 
 			viewRangeTemp = (ViewRange*)list_entry(pos, struct skipnode, link[0])->value; 
-			b2AABB& AABB = PointType::BODY_TYPE == compareType ? viewRangeTemp->GetBodyAABB ():viewRangeTemp->GetViewAABB();
+			b2AABB& AABB = PointType::BODY_TYPE == type ? viewRangeTemp->GetBodyAABB ():viewRangeTemp->GetViewAABB();
 			if (AABB.lowerBound.y > range.upperBound.y || AABB.lowerBound.x > range.upperBound.x || range.lowerBound.y > AABB.upperBound.y)
 				continue;
 			tempDataPoint[realSize++] = viewRangeTemp;
@@ -369,9 +365,9 @@ void AxisDistanceManager::CalcViewObj()
 	for (int i = 0;i < moveSize;i++) { //重计算玩家的信息
 		actoViewange = moveArrData[i];
 		actoViewange->ShiftObserverPoint();//保存上一帧数据
-		m_AxisBodyMap->SetRangeActors(PointType::BODY_TYPE, PointType::BODY_TYPE, actoViewange, *actoViewange->m_ObserverPoint, actoViewange->GetViewAABB());//重新计算本帧观察
+		m_AxisBodyMap->SetRangeActors(PointType::BODY_TYPE, actoViewange, *actoViewange->m_ObserverPoint, actoViewange->GetViewAABB());//重新计算本帧观察
 		actoViewange->ShiftBeObserverPoint();//保存上一帧数据
-		m_AxisBodyMap->SetRangeActors(PointType::VIEW_TYPE, PointType::VIEW_TYPE, actoViewange, *actoViewange->m_BeObserverPoint, actoViewange->GetBodyAABB());//取得当前有谁观察了我
+		m_AxisBodyMap->SetRangeActors(PointType::VIEW_TYPE, actoViewange, *actoViewange->m_BeObserverPoint, actoViewange->GetBodyAABB());//取得当前有谁观察了我
 	}
 	//经历了上面的步骤后,移动的对象,便重新计算了观察与被观察的数据信息.接下来对数据差集进行运算
 	CalcBeObserver(m_CalcMoveList);

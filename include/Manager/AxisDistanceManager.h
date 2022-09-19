@@ -24,13 +24,15 @@ struct XAxisComapare {
 	}
 };
 class InPosActors {
-public:
-	InPosActors() {}
-	bool operator()(const InPosActors* id1, const InPosActors* id2);
+public: 
+	inline bool operator()(const InPosActors* id1, const InPosActors* id2) {
+		return id1->m_PositionX < id2->m_PositionX;
+	}
 public:
 	float m_PositionX;
 	struct skiplist* m_SkipList;
 };
+
 struct ViewObserverState {
 	ViewRange* m_ViewRange;
 	bool m_IsVisible; 
@@ -40,14 +42,13 @@ class AxisMap{
 private:
 	std::map<float, struct skiplist*, XAxisComapare> m_XAxisActors[PointType::MAX_POINT_TYPE];//ÒÔÃ¿¸öAABBµÄ×ó±ßµãµÄX½øĞĞÅÅĞò.
 	std::vector<InPosActors*> m_RecordArray[PointType::MAX_POINT_TYPE];//ÎªÁË·ÀÖ¹ÖØ¸´±éÀú,ÀË·ÑĞÔÄÜ. ÔÚÃ¿´Î×¼±¸Ñ°ÕÒÊ±,ĞèÒª½«ËùÓĞmapµÄÊı¾İ,¿½±´µ½Êı×éÖĞÈ¥,ÒÔ¼Ó¿ìĞÔÄÜ
-	AutomaticGenerator<b2Vec2> m_b2VecIdleGenerate;//×Ô¶¯µÄÉú³ÉÊÓÍ¼¶ÔÏó¹ÜÀíµÄ¶ÔÏó 
 	AutomaticGenerator<InPosActors> m_InPosActorsGenerate;//×Ô¶¯µÄÉú³ÉÊÓÍ¼¶ÔÏó¹ÜÀíµÄ¶ÔÏó 
 public:
 	void AddtionViewRange(PointType type,ViewRange* actor, b2AABB& aabb);//Ìí¼ÓÒ»¸öµãÎ»
 	void DeleteViewRange(PointType type, ViewRange* actor, b2AABB& aabb);//É¾³ıÒ»¸öµãÎ»  
-	void ReadyInitActorData();//³õÊ¼»¯µãÎ» 
 	 
-	int SetRangeActors(PointType type, PointType compareType, ViewRange* actor, std::vector<ViewObserverState*>& outData, const b2AABB& range);//Ñ°ÕÒÏà½» µÄAABB  
+	void ReadyInitActorData();//³õÊ¼»¯µãÎ» 
+	int SetRangeActors(PointType type, ViewRange* actor, std::vector<ViewObserverState*>& outData, const b2AABB& range);//Ñ°ÕÒÏà½» µÄAABB  
 
 	AxisMap():m_InPosActorsGenerate(200) {}
 	~AxisMap();
@@ -234,11 +235,11 @@ inline std::vector<ViewObserverState*>& ViewRange::GetBeObserverArray()//»ñÈ¡µ½Ë
 	return *this->m_BeObserverPoint;
 }
 
-inline void AxisDistanceManager::AddDelayCalcTable(ActorID id) { 
+inline void AxisDistanceManager::AddDelayCalcTable(ActorID id) {
+	if (m_ViewObjMap.count(id) == 0)
+		return;
 	if (m_DelayCalcMoveList.count(id))
 		return;
-	if (m_ViewObjMap.count(id) == 0)
-		return; 
 	m_DelayCalcMoveList[id] = m_ViewObjMap[id];
 }
 inline bool AxisDistanceManager::RegisterBody(BodyData* actor) {
@@ -265,21 +266,9 @@ inline void AxisDistanceManager::UnregisterBody(BodyData* actor)
 	UnregisterBody(actor->ID());
 }
 //ÖØĞÂ¼ÆËã½ÇÉ«¾àÀë
-inline void AxisDistanceManager::Update() {
-	//Õë¶ÔËùÓĞÒÆ¶¯¹ıµÄ½ÇÉ«ÖØĞÂ¼ÆËãËûÃÇµÄ¿ÉÊÓ·¶Î§ÄÚµÄËùÓĞ 
-
-	int64_t moveCost;
-	int64_t calcCost;
-	auto t1 = std::chrono::high_resolution_clock::now();
+inline void AxisDistanceManager::Update() { 
 	ActorsMove();//¸üĞÂËùÓĞ½ÇÉ«µÄÊÓ¾à,°üÀ¨Åö×²AABB  
-	auto t2 = std::chrono::high_resolution_clock::now();
-	moveCost = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-	std::cout << "´ı¼ÆËãµÄµ¥Î»ÓĞ:" << m_CalcMoveList.size() << std::endl;
-	t1 = std::chrono::high_resolution_clock::now();
 	CalcViewObj();//¼ÆËã½ÇÉ«¿ÉÒÔ¹Û²ìµ½µÄÊÓÍ¼¶ÔÏó  
-	t2 = std::chrono::high_resolution_clock::now();
-	calcCost = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count(); 
-	std::cout << "ÒÆ¶¯ºÄÊ±" << moveCost << " ¼ÆËãºÄÊ±:" << calcCost << "×ÜºÄÊ±:" << moveCost + calcCost << std::endl;
 }
   
 inline AxisDistanceManager& AxisDistanceManager::Instance() {
@@ -289,8 +278,4 @@ inline AxisDistanceManager& AxisDistanceManager::Instance() {
 inline ViewRange* AxisDistanceManager::GetViewRange(ActorID actorID)
 {
 	return m_ViewObjMap[actorID];
-}
-
-inline bool InPosActors::operator()(const InPosActors* id1, const InPosActors* id2) {
-	return id1->m_PositionX < id2->m_PositionX;
-}
+} 

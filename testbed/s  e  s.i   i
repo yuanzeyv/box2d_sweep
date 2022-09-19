@@ -1,7 +1,7 @@
 {
   "testIndex": 0,
-  "windowWidth": 925,
-  "windowHeight": 859,
+  "windowWidth": 377,
+  "windowHeight": 383,
   "hertz": 30,
   "velocityIterations": 8,
   "positionIterations": 3,
